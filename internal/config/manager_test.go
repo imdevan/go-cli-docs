@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go-cli-template/internal/domain"
-	"go-cli-template/internal/utils"
+	"go-cli-docs/internal/domain"
+	"go-cli-docs/internal/utils"
 )
 
 func TestManagerLoadsDefaults(t *testing.T) {

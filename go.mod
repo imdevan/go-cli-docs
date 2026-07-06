@@ -1,4 +1,4 @@
-module go-cli-template
+module go-cli-docs
 
 go 1.25.6
 

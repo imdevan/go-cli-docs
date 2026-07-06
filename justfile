@@ -1,27 +1,27 @@
 set shell := ["zsh", "-cu"]
 
 build:
-	go build -o bin/l ./cmd/l
-	@size=$(stat -c %s bin/l 2>/dev/null || stat -f %z bin/l 2>/dev/null); \
+	go build -o bin/go-cli-docs ./cmd/go-cli-docs
+	@size=$(stat -c %s bin/go-cli-docs 2>/dev/null || stat -f %z bin/go-cli-docs 2>/dev/null); \
 	echo "Build size: $(awk "BEGIN {printf \"%.2f MB\", $size/1048576}")"
 
 build-run:
-	go build -o bin/l ./cmd/l && ./bin/l
+	go build -o bin/go-cli-docs ./cmd/go-cli-docs && ./bin/go-cli-docs
 
 watch:
-	@rg --files | entr -r sh -c 'sleep 0.5; go build -o bin/l ./cmd/l'
+	@rg --files | entr -r sh -c 'sleep 0.5; go build -o bin/go-cli-docs ./cmd/go-cli-docs'
 
 dev-build:
-	go build -gcflags "all=-N -l" -o bin/l ./cmd/l
+	go build -gcflags "all=-N -l" -o bin/go-cli-docs ./cmd/go-cli-docs
 
 build-aur:
 	./scripts/build_aur.sh
 
 install:
-	install -m 0755 bin/l /usr/local/bin/l
+	install -m 0755 bin/go-cli-docs /usr/local/bin/go-cli-docs
 
 uninstall:
-	rm -f /usr/local/bin/l
+	rm -f /usr/local/bin/go-cli-docs
 
 test:
 	go test ./...

@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"go-cli-template/internal/domain"
+	"go-cli-docs/internal/domain"
 )
 
 // Theme holds configurable colors for UI output.

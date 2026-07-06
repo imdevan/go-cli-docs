@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go-cli-template/internal/adapters/editor"
-	"go-cli-template/internal/config"
-	"go-cli-template/internal/domain"
-	"go-cli-template/internal/utils"
+	"go-cli-docs/internal/adapters/editor"
+	"go-cli-docs/internal/config"
+	"go-cli-docs/internal/domain"
+	"go-cli-docs/internal/utils"
 )
 
 func newConfigCmd() *cobra.Command {

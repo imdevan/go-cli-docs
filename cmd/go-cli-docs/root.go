@@ -12,11 +12,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"go-cli-template/internal/config"
-	"go-cli-template/internal/domain"
-	pkg "go-cli-template/internal/package"
-	"go-cli-template/internal/ui"
-	"go-cli-template/internal/utils"
+	"go-cli-docs/internal/config"
+	"go-cli-docs/internal/domain"
+	pkg "go-cli-docs/internal/package"
+	"go-cli-docs/internal/ui"
+	"go-cli-docs/internal/utils"
 )
 
 // Metadata loaded from package.toml at build time
