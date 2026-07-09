@@ -36,22 +36,17 @@ clean:
 	rm -rf bin
 
 # Documentation tasks
-docs-init:
-	@echo "📦 Installing documentation dependencies..."
-	cd docs && bun install
+docs-init args="":
+	./bin/go-cli-docs init {{args}}
 
-docs-generate:
-	@echo "📝 Generating API documentation from Go packages..."
-	./scripts/docs_generate.sh
+docs-generate args="":
+	./bin/go-cli-docs generate {{args}}
 
-docs-dev:
-	@echo "🚀 Starting documentation development server..."
-	@just docs-generate
-	find . \( -name "*.md" -o -name "*.go" -o -name "package.toml" \) ! -path "*/node_modules/*" ! -path "*/docs/src/content/docs/*" ! -path "*/.git/*" | entr -rn just docs-generate & cd docs && bun run dev
+docs-watch args="":
+	./bin/go-cli-docs watch {{args}} & cd docs && bun install && bun run dev
 
-docs-build:
+docs-build: docs-generate
 	@echo "🏗️  Building documentation site..."
-	@just docs-generate
 	cd docs && NODE_ENV=production bun run build
 
 docs-preview:
