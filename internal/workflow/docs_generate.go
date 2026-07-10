@@ -376,13 +376,16 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 	}
 
 	// Prepare Description
-	desc := cmdInfo.Doc
+	desc := cmdInfo.Short
 	if desc == "" || desc == "null" {
 		if cmdInfo.CmdName == pkgInfo.Name {
 			desc = pkgInfo.Description
 		} else {
 			desc = cmdInfo.Short
 		}
+	}
+	if desc == "" || desc == "null" {
+		desc = pkgInfo.Description
 	}
 
 	docText := cmdInfo.Doc
