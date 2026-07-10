@@ -13,6 +13,10 @@ import (
 )
 
 func newWatchCmd() *cobra.Command {
+	var genAPIDocs bool
+	isProd := os.Getenv("NODE_ENV") == "production"
+	defaultGenAPI := !isProd
+
 	cmd := &cobra.Command{
 		Use:   "watch",
 		Short: "Watch source files and re-generate documentation on change",
@@ -27,9 +31,11 @@ Run the Astro dev server separately:
   cd docs && bun run dev`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWatch()
+			return runWatch(genAPIDocs)
 		},
 	}
+
+	cmd.Flags().BoolVar(&genAPIDocs, "gen-api-docs", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	return cmd
 }
@@ -48,7 +54,7 @@ var excludedDirs = []string{
 	".git",
 }
 
-func runWatch() error {
+func runWatch(genAPIDocs bool) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("failed to create watcher: %w", err)
@@ -61,7 +67,7 @@ func runWatch() error {
 
 	// Initial generation.
 	fmt.Println("▶  Running initial generate...")
-	if err := runGenerate(); err != nil {
+	if err := runGenerate(genAPIDocs); err != nil {
 		fmt.Fprintf(os.Stderr, "⚠️  generate error: %v\n", err)
 	}
 
@@ -73,7 +79,7 @@ func runWatch() error {
 
 	for {
 		select {
-		case event, ok := <-watcher.Events:
+			case event, ok := <-watcher.Events:
 			if !ok {
 				return nil
 			}
@@ -82,7 +88,7 @@ func runWatch() error {
 			}
 			ts := time.Now().Format("15:04:05")
 			fmt.Printf("[%s] 🔄 %s changed – regenerating...\n", ts, event.Name)
-			if err := runGenerate(); err != nil {
+			if err := runGenerate(genAPIDocs); err != nil {
 				fmt.Fprintf(os.Stderr, "⚠️  generate error: %v\n", err)
 			} else {
 				fmt.Printf("[%s] ✅ Done\n", ts)

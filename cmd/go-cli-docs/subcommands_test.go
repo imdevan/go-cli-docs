@@ -24,7 +24,7 @@ func TestInitCmdNoOp(t *testing.T) {
 	}
 
 	// runInit should return nil (no-op) when docs/ already exists.
-	if err := runInit("bunx"); err != nil {
+	if err := runInit("bunx", false); err != nil {
 		t.Fatalf("expected no-op when docs/ exists, got: %v", err)
 	}
 }

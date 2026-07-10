@@ -1,7 +1,6 @@
-package main
+package workflow
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -37,19 +36,13 @@ type CommandInfo struct {
 	FlagGroups []FlagGroupInfo `json:"flag_groups"`
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run parse_commands.go <dir>")
-		os.Exit(1)
-	}
-	dir := os.Args[1]
+func parseCommands(dir string) ([]CommandInfo, error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading dir: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("error reading dir %s: %w", dir, err)
 	}
 
-	commands := []CommandInfo{}
+	var commands []CommandInfo
 
 	for _, f := range files {
 		if f.IsDir() {
@@ -71,12 +64,7 @@ func main() {
 		}
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(commands); err != nil {
-		fmt.Fprintf(os.Stderr, "Error encoding JSON: %v\n", err)
-		os.Exit(1)
-	}
+	return commands, nil
 }
 
 func parseExprString(expr ast.Expr) string {
@@ -390,6 +378,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 					}
 				}
 			}
+
 			if isCmd {
 				info.HasCommand = true
 				info.VarName = d.Name.Name
