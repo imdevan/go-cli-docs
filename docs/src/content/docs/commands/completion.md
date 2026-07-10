@@ -3,7 +3,13 @@ title: completion
 description: Generate shell completion scripts
 ---
 
-Generate shell completion scripts
+Generate shell completion scripts for bash, zsh, fish, or powershell.
+
+### Example
+
+```bash
+go-cli-docs completion bash > /etc/bash_completion.d/go-cli-docs
+```
 
 ## Usage
 

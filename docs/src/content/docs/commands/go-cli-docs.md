@@ -1,9 +1,19 @@
 ---
 title: go-cli-docs
-description: A go cli to build docs for your go cli.
+description: Generate Astro Starlight documentation for Go CLI projects
 ---
 
-A go cli to build docs for your go cli.
+Generate Astro Starlight documentation for Go CLI projects.
+The tool parses Cobra commands and flags, rendering markdown pages,
+sidebar configs, and API docs.
+
+### Example
+
+```bash
+go-cli-docs init
+go-cli-docs generate
+go-cli-docs watch
+```
 
 ## Usage
 
