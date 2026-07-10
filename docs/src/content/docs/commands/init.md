@@ -29,7 +29,14 @@ go-cli-docs init
 | Flag | Type | Description |
 |------|------|-------------|
 | -p, --pkg-manager | string | Package manager to use (bun, npm, yarn, pnpm) |
-| --gen-api-docs | bool | Generate API documentation via gomarkdoc |
+
+### Global Flags
+
+
+
+| Flag | Type | Description |
+|------|------|-------------|
+| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
 
 
 ## Source

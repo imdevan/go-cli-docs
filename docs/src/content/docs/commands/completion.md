@@ -17,6 +17,17 @@ go-cli-docs completion bash > /etc/bash_completion.d/go-cli-docs
 go-cli-docs completion [bash|zsh|fish|powershell]
 ```
 
+## Flags
+
+### Global Flags
+
+
+
+| Flag | Type | Description |
+|------|------|-------------|
+| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
+
+
 ## Source
 
 See [completion.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/completion.go) for implementation details.

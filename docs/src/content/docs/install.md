@@ -3,7 +3,14 @@ title: Install
 description: Installation instructions for go-cli-docs
 ---
 
-## Recommended: Just add this to your justfile 
+## Recommended: 
+
+### Start with [go-cli-template](http://devan.gg/go-cli-template/#quick-start)
+
+I would strongly recommended checking out my go-cli-template with everything including docs setup!
+
+I made this project to distribute the docs config for that project and it's children.
+### Just add this to your justfile
 
 ```bash
 _install-go-cli-docs:

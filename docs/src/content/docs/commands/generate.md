@@ -27,13 +27,13 @@ go-cli-docs generate
 
 ## Flags
 
-### Flags
+### Global Flags
 
 
 
 | Flag | Type | Description |
 |------|------|-------------|
-| --gen-api-docs | bool | Generate API documentation via gomarkdoc |
+| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
 
 
 ## Source

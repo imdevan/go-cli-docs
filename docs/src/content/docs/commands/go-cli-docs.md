@@ -31,6 +31,7 @@ go-cli-docs
 |------|------|-------------|
 | -v, --version | bool | Print version and exit |
 | --config | string | Path to config file |
+| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
 
 
 ## Available Commands
