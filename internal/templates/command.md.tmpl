@@ -1,0 +1,47 @@
+---
+title: {{ .Name }}
+description: {{ .Description }}
+---
+
+{{ .Doc }}
+
+## Usage
+
+{{ .Usage }}
+
+{{- if .FlagGroups }}
+
+## Flags
+{{ range .FlagGroups }}
+### {{ .Name }}
+
+{{ .Description }}
+
+{{- if .Example }}
+#### Example
+{{ .Example }}
+{{- end }}
+
+| Flag | Type | Description |
+|------|------|-------------|
+{{- range .Flags }}
+| {{ .Display }} | {{ .Type }} | {{ .Description }} |
+{{- end }}
+{{ end }}
+{{- end }}
+
+{{- if .Subcommands }}
+
+## Available Commands
+
+{{ range .Subcommands }}
+- [`{{ .Name }}`](/commands/{{ .Name }}) - {{ .Description }}
+{{- end }}
+{{- end }}
+
+{{- if .Repository }}
+
+## Source
+
+See [{{ .SourceFile }}]({{ .Repository }}/blob/main/{{ .SourcePath }}) for implementation details.
+{{- end }}

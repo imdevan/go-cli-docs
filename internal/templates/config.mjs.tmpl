@@ -1,9 +1,11 @@
-// config.mjs.tmpl placeholder
+const stage = process.env.NODE_ENV || "dev"
+const isProduction = stage === "production"
 
 export default {
-  url: "{{ .DocsSite }}",
-  basePath: "{{ .DocsBase }}",
+  url: isProduction ? "{{ .DocsSite }}" : "http://localhost:4321",
+  basePath: isProduction ? "{{ .DocsBase }}" : "/",
   github: "{{ .Repository }}",
+  githubDocs: "{{ .Repository }}",
   title: "{{ .ProjectName }}",
   description: "{{ .Description }}",
-};
+}

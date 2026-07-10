@@ -1,0 +1,33 @@
+import config from './config.mjs';
+
+const apiReference = {
+  label: 'API Reference',
+  items: [
+{{- range .APIPackages }}
+    { label: '{{ . }}', link: '/api/{{ . }}' },
+{{- end }}
+    {
+      label: 'Adapters',
+      items: [],
+    },
+  ],
+};
+
+const sidebar = [
+  { label: '{{ .ProjectName }}', link: '/' },
+  { label: 'Install', link: '/install' },
+  { label: 'Commands', items: [
+    { label: '{{ .ProjectName }}', link: '/commands/{{ .ProjectName }}' },
+{{- range .Commands }}
+    { label: '{{ .Name }}', link: '/commands/{{ .Name }}' },
+{{- end }}
+  ] },
+  { label: 'Configuration', link: '/configuration' },
+];
+
+const isProduction = process.env.NODE_ENV === 'production';
+if (!isProduction) {
+  sidebar.push(apiReference);
+}
+
+export default sidebar;
