@@ -53,6 +53,9 @@ func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 				commands[i].CmdName = strings.TrimSuffix(base, filepath.Ext(base))
 			}
 		}
+		if commands[i].CmdName == "root" || filepath.Base(commands[i].GoFile) == "root.go" || strings.Contains(strings.ToLower(commands[i].VarName), "rootcmd") {
+			commands[i].CmdName = pkgInfo.Name
+		}
 	}
 
 	// 3. Generate config (docs/config.mjs)
