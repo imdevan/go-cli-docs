@@ -26,8 +26,6 @@ go-cli-docs watch
 
 
 
-# This shouldn't be Here!
-
 | Flag | Type | Description |
 |------|------|-------------|
 | -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |

@@ -27,8 +27,6 @@ go-cli-docs
 
 
 
-# This shouldn't be Here!
-
 | Flag | Type | Description |
 |------|------|-------------|
 | -v, --version | bool | Print version and exit |

@@ -26,8 +26,6 @@ go-cli-docs init
 
 
 
-# This shouldn't be Here!
-
 | Flag | Type | Description |
 |------|------|-------------|
 | -p, --pkg-manager | string | Package manager to use (bun, npm, yarn, pnpm) |
@@ -35,8 +33,6 @@ go-cli-docs init
 ### Global Flags
 
 
-
-# This shouldn't be Here!
 
 | Flag | Type | Description |
 |------|------|-------------|

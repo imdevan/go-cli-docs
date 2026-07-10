@@ -4,11 +4,7 @@ const apiReference = {
   label: 'API Reference',
   items: [
     { label: 'app', link: '/api/app' },
-    { label: 'config', link: '/api/config' },
-    { label: 'domain', link: '/api/domain' },
     { label: 'errors', link: '/api/errors' },
-    { label: 'ui', link: '/api/ui' },
-    { label: 'utils', link: '/api/utils' },
     { label: 'workflow', link: '/api/workflow' },
     {
       label: 'Adapters',
