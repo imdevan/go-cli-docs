@@ -37,9 +37,6 @@ var pkgManagerCmds = map[string]pmCmds{
 //		```
 func newInitCmd() *cobra.Command {
 	var pkgManager string
-	var genAPIDocs bool
-	isProd := os.Getenv("NODE_ENV") == "production"
-	defaultGenAPI := !isProd
 
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -55,7 +52,6 @@ After scaffolding, init automatically runs generate to populate the docs site.`,
 	}
 
 	cmd.Flags().StringVarP(&pkgManager, "pkg-manager", "p", "bun", "Package manager to use (bun, npm, yarn, pnpm)")
-	cmd.Flags().BoolVarP(&genAPIDocs, "gen-api-docs", "a", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	return cmd
 }

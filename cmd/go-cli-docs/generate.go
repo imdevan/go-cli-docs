@@ -2,7 +2,6 @@ package main
 
 import (
 	"go-cli-docs/internal/workflow"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -25,10 +24,6 @@ import (
 //			go-cli-docs generate --gen-api-docs=false
 //			```
 func newGenerateCmd() *cobra.Command {
-	var genAPIDocs bool
-	isProd := os.Getenv("NODE_ENV") == "production"
-	defaultGenAPI := !isProd
-
 	cmd := &cobra.Command{
 		Use:   "generate",
 		Short: "Generate all documentation from source",
@@ -46,8 +41,6 @@ func newGenerateCmd() *cobra.Command {
 			return runGenerate(genAPIDocs)
 		},
 	}
-
-	cmd.Flags().BoolVar(&genAPIDocs, "gen-api-docs", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	return cmd
 }

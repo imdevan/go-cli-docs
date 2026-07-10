@@ -2,12 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = newRootCmd()
+
+// genAPIDocs is shared by init and generate via a persistent root flag.
+var genAPIDocs bool
 
 // @docs-command:root
 //
@@ -16,7 +20,6 @@ var rootCmd = newRootCmd()
 //		Generate Astro Starlight documentation for Go CLI projects.
 //		The tool parses Cobra commands and flags, rendering markdown pages,
 //		sidebar configs, and API docs.
-//
 //	example:
 //		```bash
 //		go-cli-docs init
@@ -32,8 +35,12 @@ func newRootCmd() *cobra.Command {
 	}
 
 	var showVersion bool
+	isProd := os.Getenv("NODE_ENV") == "production"
+	defaultGenAPI := !isProd
+
 	cmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Print version and exit")
 	cmd.Flags().String("config", "", "Path to config file")
+	cmd.PersistentFlags().BoolVarP(&genAPIDocs, "gen-api-docs", "a", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if showVersion {

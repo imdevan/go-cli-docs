@@ -25,10 +25,6 @@ import (
 //			go-cli-docs watch --gen-api-docs=false
 //			```
 func newWatchCmd() *cobra.Command {
-	var genAPIDocs bool
-	isProd := os.Getenv("NODE_ENV") == "production"
-	defaultGenAPI := !isProd
-
 	cmd := &cobra.Command{
 		Use:   "watch",
 		Short: "Watch source files and re-generate documentation on change",
@@ -46,8 +42,6 @@ Run the Astro dev server separately:
 			return runWatch(genAPIDocs)
 		},
 	}
-
-	cmd.Flags().BoolVar(&genAPIDocs, "gen-api-docs", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	return cmd
 }
