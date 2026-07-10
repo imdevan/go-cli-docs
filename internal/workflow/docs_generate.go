@@ -343,6 +343,47 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 		})
 	}
 
+	// Inherit persistent flags from the root command into subcommand docs,
+	// mirroring cobra's own "Global Flags" section in --help output.
+	if cmdInfo.CmdName != pkgInfo.Name {
+		ownFlags := make(map[string]bool)
+		for _, fg := range cmdInfo.FlagGroups {
+			for _, f := range fg.Flags {
+				ownFlags[f.Name] = true
+			}
+		}
+
+		var globalFlags []TemplateFlag
+		for _, c := range allCmds {
+			if c.CmdName != pkgInfo.Name {
+				continue
+			}
+			for _, fg := range c.FlagGroups {
+				for _, f := range fg.Flags {
+					if !f.Persistent || ownFlags[f.Name] {
+						continue
+					}
+					display := "--" + f.Name
+					if f.Short != "" && f.Short != "null" {
+						display = fmt.Sprintf("-%s, --%s", f.Short, f.Name)
+					}
+					globalFlags = append(globalFlags, TemplateFlag{
+						Display:     display,
+						Type:        strings.ToLower(f.Type),
+						Description: f.Description,
+					})
+				}
+			}
+		}
+
+		if len(globalFlags) > 0 {
+			flagGroups = append(flagGroups, TemplateFlagGroup{
+				Name:  "Global Flags",
+				Flags: globalFlags,
+			})
+		}
+	}
+
 	// Prepare Subcommands (only for root command)
 	var subcommands []TemplateSubcommand
 	if cmdInfo.CmdName == pkgInfo.Name {

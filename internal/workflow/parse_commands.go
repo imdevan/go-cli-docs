@@ -16,6 +16,7 @@ type FlagInfo struct {
 	Short       string `json:"short"`
 	Type        string `json:"type"`
 	Description string `json:"description"`
+	Persistent  bool   `json:"persistent"`
 }
 
 type FlagGroupInfo struct {
@@ -210,20 +211,21 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 	}
 
 	// Helper to extract flag info from a CallExpr
-	extractFlagInfo := func(call *ast.CallExpr) (name, short, flagType, description string, ok bool) {
+	extractFlagInfo := func(call *ast.CallExpr) (name, short, flagType, description string, persistent, ok bool) {
 		sel, okSel := call.Fun.(*ast.SelectorExpr)
 		if !okSel {
-			return "", "", "", "", false
+			return "", "", "", "", false, false
 		}
 		funName := sel.Sel.Name
 		recvCall, okRecvCall := sel.X.(*ast.CallExpr)
 		if !okRecvCall {
-			return "", "", "", "", false
+			return "", "", "", "", false, false
 		}
 		recvSel, okRecvSel := recvCall.Fun.(*ast.SelectorExpr)
 		if !okRecvSel || (recvSel.Sel.Name != "Flags" && recvSel.Sel.Name != "PersistentFlags") {
-			return "", "", "", "", false
+			return "", "", "", "", false, false
 		}
+		persistent = recvSel.Sel.Name == "PersistentFlags"
 
 		isFlagMethod := false
 		for _, prefix := range []string{"Bool", "String", "Int", "Duration", "Float", "Var"} {
@@ -233,7 +235,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 			}
 		}
 		if !isFlagMethod {
-			return "", "", "", "", false
+			return "", "", "", "", false, false
 		}
 
 		args := call.Args
@@ -404,7 +406,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 
 		ast.Inspect(file, func(n ast.Node) bool {
 			if call, ok := n.(*ast.CallExpr); ok {
-				if _, _, _, _, isFlag := extractFlagInfo(call); isFlag {
+				if _, _, _, _, _, isFlag := extractFlagInfo(call); isFlag {
 					items = append(items, ASTNodeWithLine{
 						Line:     fset.Position(call.Pos()).Line,
 						FlagCall: call,
@@ -446,13 +448,14 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 			var allFlags []FlagInfo
 			for _, item := range items {
 				if item.FlagCall != nil {
-					name, short, flagType, desc, ok := extractFlagInfo(item.FlagCall)
+					name, short, flagType, desc, persistent, ok := extractFlagInfo(item.FlagCall)
 					if ok {
 						allFlags = append(allFlags, FlagInfo{
 							Name:        name,
 							Short:       short,
 							Type:        flagType,
 							Description: desc,
+							Persistent:  persistent,
 						})
 					}
 				}
@@ -518,7 +521,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 						}
 					}
 				} else if item.FlagCall != nil {
-					name, short, flagType, desc, ok := extractFlagInfo(item.FlagCall)
+					name, short, flagType, desc, persistent, ok := extractFlagInfo(item.FlagCall)
 					if ok {
 						if currentGroup == nil {
 							currentGroup = &FlagGroupInfo{
@@ -530,6 +533,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 							Short:       short,
 							Type:        flagType,
 							Description: desc,
+							Persistent:  persistent,
 						})
 					}
 				}
