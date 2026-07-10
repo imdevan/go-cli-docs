@@ -354,16 +354,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 						} else if d.Doc != nil {
 							commentGroup = d.Doc
 						}
-						if commentGroup != nil {
-							info.Doc = strings.TrimSpace(commentGroup.Text())
-							lines := strings.Split(info.Doc, "\n")
-							if len(lines) > 0 && len(lines[0]) > 0 {
-								words := strings.Fields(lines[0])
-								if len(words) > 0 {
-									info.CmdName = strings.Trim(words[0], "`\"'")
-								}
-							}
-						}
+						setDocAndName(&info, commentGroup)
 						break
 					}
 				}
@@ -386,16 +377,7 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 					info.Use = u
 					info.Short = s
 				}
-				if d.Doc != nil {
-					info.Doc = strings.TrimSpace(d.Doc.Text())
-					lines := strings.Split(info.Doc, "\n")
-					if len(lines) > 0 && len(lines[0]) > 0 {
-						words := strings.Fields(lines[0])
-						if len(words) > 0 {
-							info.CmdName = strings.Trim(words[0], "`\"'")
-						}
-					}
-				}
+				setDocAndName(&info, d.Doc)
 				break
 			}
 		}
@@ -477,3 +459,102 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 
 	return info, nil
 }
+
+func setDocAndName(info *CommandInfo, commentGroup *ast.CommentGroup) {
+	if commentGroup == nil {
+		return
+	}
+	docText := commentGroup.Text()
+	name, description, example, note, parsed := parseDocsCommandBlock(docText)
+	if parsed {
+		if name != "" {
+			info.CmdName = name
+		}
+		var docParts []string
+		if description != "" {
+			docParts = append(docParts, description)
+		}
+		if example != "" {
+			docParts = append(docParts, "### Example\n\n"+example)
+		}
+		if note != "" {
+			docParts = append(docParts, ":::note\n"+note+"\n:::")
+		}
+		info.Doc = strings.Join(docParts, "\n\n")
+	} else {
+		info.Doc = strings.TrimSpace(docText)
+		lines := strings.Split(info.Doc, "\n")
+		if len(lines) > 0 && len(lines[0]) > 0 {
+			words := strings.Fields(lines[0])
+			if len(words) > 0 {
+				info.CmdName = strings.Trim(words[0], "`\"'")
+			}
+		}
+	}
+}
+
+func parseDocsCommandBlock(text string) (name, description, example, note string, parsed bool) {
+	lines := strings.Split(text, "\n")
+	startIndex := -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "@docs-command:") || strings.HasPrefix(trimmed, "@docs-command") {
+			startIndex = i
+			break
+		}
+	}
+	if startIndex == -1 {
+		return
+	}
+	parsed = true
+
+	var currentKey string
+	var currentValLines []string
+
+	flush := func() {
+		if currentKey == "" {
+			return
+		}
+		val := cleanBlockText(currentValLines)
+		switch currentKey {
+		case "name":
+			name = val
+		case "description":
+			description = val
+		case "example":
+			example = val
+		case "note":
+			note = val
+		}
+		currentKey = ""
+		currentValLines = nil
+	}
+
+	for _, line := range lines[startIndex+1:] {
+		trimmed := strings.TrimSpace(line)
+		// Check if this line starts a new key
+		var nextKey string
+		for _, k := range []string{"name:", "description:", "example:", "note:"} {
+			if strings.HasPrefix(trimmed, k) {
+				nextKey = strings.TrimSuffix(k, ":")
+				break
+			}
+		}
+
+		if nextKey != "" {
+			flush()
+			currentKey = nextKey
+			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, currentKey+":"))
+			if rest != "" {
+				currentValLines = append(currentValLines, rest)
+			}
+		} else {
+			if currentKey != "" {
+				currentValLines = append(currentValLines, line)
+			}
+		}
+	}
+	flush()
+	return
+}
+
