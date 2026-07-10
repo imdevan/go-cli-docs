@@ -9,16 +9,24 @@ import (
 
 var rootCmd = newRootCmd()
 
+// @docs-command:root
+//
+//	name: go-cli-docs
+//	description:
+//		Generate Astro Starlight documentation for Go CLI projects.
+//		The tool parses Cobra commands and flags, rendering markdown pages,
+//		sidebar configs, and API docs.
+//
+//	example:
+//		```bash
+//		go-cli-docs init
+//		go-cli-docs generate
+//		go-cli-docs watch
+//		```
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "go-cli-docs",
 		Short: "Generate Astro Starlight documentation for Go CLI projects",
-		Long: `go-cli-docs generates Astro Starlight documentation for Go CLI projects.
-
-Commands:
-  init      Scaffold the Astro Starlight docs directory
-  generate  Generate all documentation from source
-  watch     Watch source files and re-generate on change`,
 		// No RunE – invoking the root command without a subcommand shows help.
 		SilenceUsage: true,
 	}

@@ -7,6 +7,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// @docs-command:
+//
+//		name: completion
+//		description:
+//			Generate shell completion scripts for bash, zsh, fish, or powershell.
+//		example:
+//			```bash
+//			go-cli-docs completion bash > /etc/bash_completion.d/go-cli-docs
+//			```
 func newCompletionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",

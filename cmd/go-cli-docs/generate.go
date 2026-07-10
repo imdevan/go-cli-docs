@@ -7,6 +7,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// @docs-command:
+//
+//		name: generate
+//		description:
+//			Invokes the full docs generation pipeline:
+//			1. Reads package metadata (TOML)
+//			2. Generates markdown content pages
+//			3. Parses Cobra commands
+//			4. Generates command documentation
+//			5. Generates API documentation (gomarkdoc)
+//			6. Generates config (config.mjs)
+//			7. Generates sidebar (sidebar.mjs)
+//		example:
+//			```bash
+//			go-cli-docs generate
+//			go-cli-docs generate --gen-api-docs=false
+//			```
 func newGenerateCmd() *cobra.Command {
 	var genAPIDocs bool
 	isProd := os.Getenv("NODE_ENV") == "production"

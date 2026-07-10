@@ -12,6 +12,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// @docs-command:
+//
+//		name: watch
+//		description:
+//			Monitors source files for changes and automatically re-runs generate.
+//			Watched patterns: *.md, *.go, package.toml
+//			Excluded paths: node_modules/, docs/src/content/docs/, .git/
+//		example:
+//			```bash
+//			go-cli-docs watch
+//			go-cli-docs watch --gen-api-docs=false
+//			```
 func newWatchCmd() *cobra.Command {
 	var genAPIDocs bool
 	isProd := os.Getenv("NODE_ENV") == "production"

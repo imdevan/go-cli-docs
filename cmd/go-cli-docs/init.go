@@ -23,6 +23,18 @@ var pkgManagerCmds = map[string]pmCmds{
 	"pnpm": {"pnpm create astro@latest %s -- --template starlight --yes --no-install", "cd %s && pnpm install --silent"},
 }
 
+// @docs-command:
+//
+//	name: init
+//	description:
+//		Creates the docs/ folder and scaffolds Astro Starlight.
+//		If the docs/ directory already exists, init is a no-op.
+//		After scaffolding, init automatically runs generate to populate the docs site.
+//	example:
+//		```bash
+//		go-cli-docs init
+//		go-cli-docs init --pkg-manager npm
+//		```
 func newInitCmd() *cobra.Command {
 	var pkgManager string
 	var genAPIDocs bool
