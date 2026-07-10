@@ -69,23 +69,48 @@ func parseCommands(dir string) ([]CommandInfo, error) {
 	return commands, nil
 }
 
-func parseExprString(expr ast.Expr) string {
+func parseExprString(expr ast.Expr, file *ast.File) string {
 	switch e := expr.(type) {
 	case *ast.BasicLit:
 		if e.Kind == token.STRING {
 			return strings.Trim(e.Value, "`\"")
 		}
 	case *ast.Ident:
-		if e.Name == "name" {
-			return "l"
-		}
-		if e.Name == "short" {
-			return "an ls replacement"
+		if file != nil {
+			if val := lookupIdentValue(e.Name, file); val != "" {
+				return val
+			}
 		}
 		return e.Name
 	case *ast.BinaryExpr:
 		if e.Op == token.ADD {
-			return parseExprString(e.X) + parseExprString(e.Y)
+			return parseExprString(e.X, file) + parseExprString(e.Y, file)
+		}
+	}
+	return ""
+}
+
+func lookupIdentValue(name string, file *ast.File) string {
+	if file == nil {
+		return ""
+	}
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || (genDecl.Tok != token.CONST && genDecl.Tok != token.VAR) {
+			continue
+		}
+		for _, spec := range genDecl.Specs {
+			vspec, ok := spec.(*ast.ValueSpec)
+			if !ok {
+				continue
+			}
+			for i, ident := range vspec.Names {
+				if ident.Name == name {
+					if i < len(vspec.Values) {
+						return parseExprString(vspec.Values[i], nil)
+					}
+				}
+			}
 		}
 	}
 	return ""
@@ -241,34 +266,34 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 		args := call.Args
 		if strings.HasSuffix(funName, "VarP") {
 			if len(args) >= 5 {
-				name = parseExprString(args[1])
-				short = parseExprString(args[2])
-				description = parseExprString(args[4])
+				name = parseExprString(args[1], file)
+				short = parseExprString(args[2], file)
+				description = parseExprString(args[4], file)
 				flagType = strings.TrimSuffix(funName, "VarP")
 				ok = true
 			}
 		} else if strings.HasSuffix(funName, "Var") {
 			if len(args) >= 4 {
-				name = parseExprString(args[1])
+				name = parseExprString(args[1], file)
 				short = ""
-				description = parseExprString(args[3])
+				description = parseExprString(args[3], file)
 				flagType = strings.TrimSuffix(funName, "Var")
 				ok = true
 			}
 		} else {
 			if strings.HasSuffix(funName, "P") {
 				if len(args) >= 4 {
-					name = parseExprString(args[0])
-					short = parseExprString(args[1])
-					description = parseExprString(args[3])
+					name = parseExprString(args[0], file)
+					short = parseExprString(args[1], file)
+					description = parseExprString(args[3], file)
 					flagType = strings.TrimSuffix(funName, "P")
 					ok = true
 				}
 			} else {
 				if len(args) >= 3 {
-					name = parseExprString(args[0])
+					name = parseExprString(args[0], file)
 					short = ""
-					description = parseExprString(args[2])
+					description = parseExprString(args[2], file)
 					flagType = funName
 					ok = true
 				}
@@ -308,9 +333,9 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 					continue
 				}
 				if keyIdent.Name == "Use" {
-					use = parseExprString(kv.Value)
+					use = parseExprString(kv.Value, file)
 				} else if keyIdent.Name == "Short" {
-					short = parseExprString(kv.Value)
+					short = parseExprString(kv.Value, file)
 				}
 			}
 			return false
@@ -725,4 +750,3 @@ func parseDocsCommandBlock(text string) (name, description, example, note string
 	flush()
 	return
 }
-
