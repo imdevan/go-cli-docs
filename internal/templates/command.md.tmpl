@@ -13,7 +13,9 @@ description: {{ .Description }}
 
 ## Flags
 {{ range .FlagGroups }}
+{{- if or (ne .Name "Flags") (gt (len $.FlagGroups) 1) }}
 ### {{ .Name }}
+{{- end }}
 
 {{ .Description }}
 
