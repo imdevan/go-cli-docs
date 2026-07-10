@@ -26,6 +26,8 @@ go-cli-docs init
 
 
 
+# This shouldn't be Here!
+
 | Flag | Type | Description |
 |------|------|-------------|
 | -p, --pkg-manager | string | Package manager to use (bun, npm, yarn, pnpm) |
@@ -34,9 +36,12 @@ go-cli-docs init
 
 
 
+# This shouldn't be Here!
+
 | Flag | Type | Description |
 |------|------|-------------|
 | -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
+| -t, --templates | stringarray | Path to a file or directory of custom templates overriding the embedded defaults (repeatable) |
 
 
 ## Source

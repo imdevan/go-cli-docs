@@ -31,9 +31,12 @@ go-cli-docs generate
 
 
 
+# This shouldn't be Here!
+
 | Flag | Type | Description |
 |------|------|-------------|
 | -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
+| -t, --templates | stringarray | Path to a file or directory of custom templates overriding the embedded defaults (repeatable) |
 
 
 ## Source
