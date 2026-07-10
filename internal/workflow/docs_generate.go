@@ -193,29 +193,16 @@ func writeSidebarMjs(info *PackageInfo, commands []CommandInfo) error {
 }
 
 func writeAstroConfigMjs() error {
-	path := filepath.Join("docs", "astro.config.mjs")
-	content := `// @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
-import config from './config.mjs';
-import sidebar from './sidebar.mjs';
+	tmpl, err := template.ParseFS(templates.FS, "astro.config.mjs.tmpl")
+	if err != nil {
+		return fmt.Errorf("failed to parse astro config template: %w", err)
+	}
 
-// https://astro.build/config
-export default defineConfig({
-	site: config.url,
-	base: config.basePath,
-	integrations: [
-		starlight({
-			title: config.title,
-			social: [
-				{ icon: 'github', label: 'GitHub', href: config.github },
-			],
-			sidebar: sidebar,
-		}),
-	],
-});
-`
-	return os.WriteFile(path, []byte(content), 0644)
+	path := filepath.Join("docs", "astro.config.mjs")
+	if err := templates.RenderToFile(tmpl, path, nil); err != nil {
+		return fmt.Errorf("failed to write astro.config.mjs: %w", err)
+	}
+	return nil
 }
 
 func detectAPIPackages() ([]string, error) {
