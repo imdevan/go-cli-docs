@@ -23,7 +23,6 @@ go-cli-docs
 
 ## Flags
 
-### Flags
 
 
 

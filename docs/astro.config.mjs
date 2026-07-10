@@ -14,6 +14,9 @@ export default defineConfig({
 			social: [
 				{ icon: 'github', label: 'GitHub', href: config.github },
 			],
+			customCss: [
+				'./src/styles/custom.css',
+			],
 			sidebar: sidebar,
 		}),
 	],
