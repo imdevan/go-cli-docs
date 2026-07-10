@@ -42,7 +42,7 @@ docs-init args="":
 docs-generate args="":
 	./bin/go-cli-docs generate {{args}}
 
-docs-watch args="":
+docs-dev args="":
 	./bin/go-cli-docs watch {{args}} & cd docs && bun install && bun run dev
 
 docs-build: docs-generate
