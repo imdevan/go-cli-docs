@@ -22,6 +22,7 @@ type FlagGroupInfo struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	Example     string     `json:"example"`
+	Note        string     `json:"note"`
 	Flags       []FlagInfo `json:"flags"`
 }
 
@@ -417,44 +418,128 @@ func parseGoFile(filePath string) (CommandInfo, error) {
 			return items[i].Line < items[j].Line
 		})
 
-		var flagGroups []FlagGroupInfo
-		var currentGroup *FlagGroupInfo
-
+		// Check if we have any @docs-flag-group block in the file comments
+		hasDocsFlagGroup := false
 		for _, item := range items {
 			if item.Comment != nil {
-				gName, desc, example, isGroup := parseCommentGroup(item.Comment.Text())
-				if isGroup {
-					if currentGroup != nil {
-						flagGroups = append(flagGroups, *currentGroup)
-					}
-					currentGroup = &FlagGroupInfo{
-						Name:        gName,
-						Description: desc,
-						Example:     example,
-					}
-				}
-			} else if item.FlagCall != nil {
-				name, short, flagType, desc, ok := extractFlagInfo(item.FlagCall)
-				if ok {
-					if currentGroup == nil {
-						currentGroup = &FlagGroupInfo{
-							Name: "Flags",
-						}
-					}
-					currentGroup.Flags = append(currentGroup.Flags, FlagInfo{
-						Name:        name,
-						Short:       short,
-						Type:        flagType,
-						Description: desc,
-					})
+				txt := item.Comment.Text()
+				if strings.Contains(txt, "@docs-flag-group:") || strings.Contains(txt, "@docs-flag-group") {
+					hasDocsFlagGroup = true
+					break
 				}
 			}
 		}
-		if currentGroup != nil {
-			flagGroups = append(flagGroups, *currentGroup)
-		}
 
-		info.FlagGroups = flagGroups
+		if hasDocsFlagGroup {
+			// New System: organize flags based on @docs-flag-group blocks
+			var parsedBlocks []parsedFlagGroupBlock
+			for _, item := range items {
+				if item.Comment != nil {
+					block, parsed := parseDocsFlagGroupBlock(item.Comment.Text())
+					if parsed {
+						parsedBlocks = append(parsedBlocks, block)
+					}
+				}
+			}
+
+			// Gather all flags parsed from the AST
+			var allFlags []FlagInfo
+			for _, item := range items {
+				if item.FlagCall != nil {
+					name, short, flagType, desc, ok := extractFlagInfo(item.FlagCall)
+					if ok {
+						allFlags = append(allFlags, FlagInfo{
+							Name:        name,
+							Short:       short,
+							Type:        flagType,
+							Description: desc,
+						})
+					}
+				}
+			}
+
+			// Track assigned flags
+			assigned := make(map[string]bool)
+			var flagGroups []FlagGroupInfo
+
+			for _, b := range parsedBlocks {
+				group := FlagGroupInfo{
+					Name:        b.Name,
+					Description: b.Description,
+					Example:     b.Example,
+					Note:        b.Note,
+				}
+				for _, fName := range b.FlagNames {
+					// Find the flag in parsed flags
+					for _, f := range allFlags {
+						if f.Name == fName {
+							group.Flags = append(group.Flags, f)
+							assigned[f.Name] = true
+							break
+						}
+					}
+				}
+				flagGroups = append(flagGroups, group)
+			}
+
+			// Add unassigned flags to default group
+			var unassignedFlags []FlagInfo
+			for _, f := range allFlags {
+				if !assigned[f.Name] {
+					unassignedFlags = append(unassignedFlags, f)
+				}
+			}
+
+			if len(unassignedFlags) > 0 {
+				flagGroups = append(flagGroups, FlagGroupInfo{
+					Name:  "Flags",
+					Flags: unassignedFlags,
+				})
+			}
+
+			info.FlagGroups = flagGroups
+
+		} else {
+			// Old System: fallback to @group: comments and encounter order
+			var flagGroups []FlagGroupInfo
+			var currentGroup *FlagGroupInfo
+
+			for _, item := range items {
+				if item.Comment != nil {
+					gName, desc, example, isGroup := parseCommentGroup(item.Comment.Text())
+					if isGroup {
+						if currentGroup != nil {
+							flagGroups = append(flagGroups, *currentGroup)
+						}
+						currentGroup = &FlagGroupInfo{
+							Name:        gName,
+							Description: desc,
+							Example:     example,
+						}
+					}
+				} else if item.FlagCall != nil {
+					name, short, flagType, desc, ok := extractFlagInfo(item.FlagCall)
+					if ok {
+						if currentGroup == nil {
+							currentGroup = &FlagGroupInfo{
+								Name: "Flags",
+							}
+						}
+						currentGroup.Flags = append(currentGroup.Flags, FlagInfo{
+							Name:        name,
+							Short:       short,
+							Type:        flagType,
+							Description: desc,
+						})
+					}
+				}
+			}
+			if currentGroup != nil {
+				flagGroups = append(flagGroups, *currentGroup)
+			}
+
+			info.FlagGroups = flagGroups
+		}
 	}
 
 	return info, nil
@@ -491,6 +576,85 @@ func setDocAndName(info *CommandInfo, commentGroup *ast.CommentGroup) {
 			}
 		}
 	}
+}
+
+type parsedFlagGroupBlock struct {
+	Name        string
+	Description string
+	Example     string
+	Note        string
+	FlagNames   []string
+}
+
+func parseDocsFlagGroupBlock(text string) (block parsedFlagGroupBlock, parsed bool) {
+	lines := strings.Split(text, "\n")
+	startIndex := -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "@docs-flag-group:") || strings.HasPrefix(trimmed, "@docs-flag-group") {
+			startIndex = i
+			break
+		}
+	}
+	if startIndex == -1 {
+		return
+	}
+	parsed = true
+
+	var currentKey string
+	var currentValLines []string
+
+	flush := func() {
+		if currentKey == "" {
+			return
+		}
+		val := cleanBlockText(currentValLines)
+		switch currentKey {
+		case "name":
+			block.Name = val
+		case "description":
+			block.Description = val
+		case "example":
+			block.Example = val
+		case "note":
+			block.Note = val
+		case "flags":
+			for _, part := range strings.Split(val, ",") {
+				trimmedPart := strings.TrimSpace(part)
+				if trimmedPart != "" {
+					block.FlagNames = append(block.FlagNames, trimmedPart)
+				}
+			}
+		}
+		currentKey = ""
+		currentValLines = nil
+	}
+
+	for _, line := range lines[startIndex+1:] {
+		trimmed := strings.TrimSpace(line)
+		var nextKey string
+		for _, k := range []string{"name:", "description:", "example:", "note:", "flags:"} {
+			if strings.HasPrefix(trimmed, k) {
+				nextKey = strings.TrimSuffix(k, ":")
+				break
+			}
+		}
+
+		if nextKey != "" {
+			flush()
+			currentKey = nextKey
+			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, currentKey+":"))
+			if rest != "" {
+				currentValLines = append(currentValLines, rest)
+			}
+		} else {
+			if currentKey != "" {
+				currentValLines = append(currentValLines, line)
+			}
+		}
+	}
+	flush()
+	return
 }
 
 func parseDocsCommandBlock(text string) (name, description, example, note string, parsed bool) {
