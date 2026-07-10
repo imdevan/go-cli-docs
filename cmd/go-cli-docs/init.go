@@ -55,7 +55,7 @@ After scaffolding, init automatically runs generate to populate the docs site.`,
 	}
 
 	cmd.Flags().StringVarP(&pkgManager, "pkg-manager", "p", "bun", "Package manager to use (bun, npm, yarn, pnpm)")
-	cmd.Flags().BoolVar(&genAPIDocs, "gen-api-docs", defaultGenAPI, "Generate API documentation via gomarkdoc")
+	cmd.Flags().BoolVarP(&genAPIDocs, "gen-api-docs", "a", defaultGenAPI, "Generate API documentation via gomarkdoc")
 
 	return cmd
 }
