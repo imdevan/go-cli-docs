@@ -1,7 +1,7 @@
 package main
 
 import (
-	"go-cli-docs/internal/workflow"
+	"github.com/imdevan/go-cli-docs/internal/workflow"
 
 	"github.com/spf13/cobra"
 )

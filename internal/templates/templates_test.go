@@ -7,7 +7,7 @@ import (
 	"testing"
 	"text/template"
 
-	"go-cli-docs/internal/templates"
+	"github.com/imdevan/go-cli-docs/internal/templates"
 )
 
 func TestEmbeddedTemplates(t *testing.T) {

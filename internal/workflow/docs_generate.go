@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go-cli-docs/internal/templates"
+	"github.com/imdevan/go-cli-docs/internal/templates"
 	"github.com/pelletier/go-toml/v2"
 )
 
