@@ -279,6 +279,7 @@ type TemplateFlagGroup struct {
 	Name        string
 	Description string
 	Example     string
+	Note        string
 	Flags       []TemplateFlag
 }
 
@@ -337,6 +338,7 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 			Name:        fg.Name,
 			Description: fg.Description,
 			Example:     fg.Example,
+			Note:        fg.Note,
 			Flags:       flags,
 		})
 	}
