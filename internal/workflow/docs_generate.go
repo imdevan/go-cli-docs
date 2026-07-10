@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"go-cli-docs/internal/templates"
 	"github.com/pelletier/go-toml/v2"
@@ -29,7 +28,9 @@ type PackageInfo struct {
 }
 
 // GenerateDocs performs the full documentation generation using Go templates.
-func GenerateDocs(genAPIDocs bool) error {
+// templatesOverride is a list of files and/or directories checked for
+// user-supplied templates before falling back to the embedded defaults.
+func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 	// 1. Load package metadata (TOML)
 	pkgInfo, err := loadPackageInfo()
 	if err != nil {
@@ -55,17 +56,17 @@ func GenerateDocs(genAPIDocs bool) error {
 	}
 
 	// 3. Generate config (docs/config.mjs)
-	if err := writeConfigMjs(pkgInfo); err != nil {
+	if err := writeConfigMjs(pkgInfo, templatesOverride); err != nil {
 		return err
 	}
 
 	// 4. Generate sidebar files (docs/sidebar.mjs)
-	if err := writeSidebarMjs(pkgInfo, commands); err != nil {
+	if err := writeSidebarMjs(pkgInfo, commands, templatesOverride); err != nil {
 		return err
 	}
 
 	// 5. Update docs/astro.config.mjs to use dynamic header and config
-	if err := writeAstroConfigMjs(); err != nil {
+	if err := writeAstroConfigMjs(templatesOverride); err != nil {
 		return err
 	}
 
@@ -76,20 +77,20 @@ func GenerateDocs(genAPIDocs bool) error {
 	}
 
 	// 7. Generate markdown content pages
-	if err := generateContentPage("README.md", "index.md", pkgInfo.Name, pkgInfo.Description); err != nil {
+	if err := generateContentPage("README.md", "index.md", pkgInfo.Name, pkgInfo.Description, templatesOverride); err != nil {
 		return err
 	}
-	if err := generateContentPage("INSTALL.md", "install.md", "Install", fmt.Sprintf("Installation instructions for %s", pkgInfo.Name)); err != nil {
+	if err := generateContentPage("INSTALL.md", "install.md", "Install", fmt.Sprintf("Installation instructions for %s", pkgInfo.Name), templatesOverride); err != nil {
 		return err
 	}
-	if err := generateContentPage("CONFIG.md", "configuration.md", "Configuration", fmt.Sprintf("Configuration options for %s", pkgInfo.Name)); err != nil {
+	if err := generateContentPage("CONFIG.md", "configuration.md", "Configuration", fmt.Sprintf("Configuration options for %s", pkgInfo.Name), templatesOverride); err != nil {
 		return err
 	}
 	// CONTRIBUTING.md is optional
-	_ = generateContentPage("CONTRIBUTING.md", "contributing.md", "Contributing", fmt.Sprintf("Contributing to %s", pkgInfo.Name))
+	_ = generateContentPage("CONTRIBUTING.md", "contributing.md", "Contributing", fmt.Sprintf("Contributing to %s", pkgInfo.Name), templatesOverride)
 
 	// 8. Generate command documentation
-	if err := generateCommandPages(pkgInfo, commands); err != nil {
+	if err := generateCommandPages(pkgInfo, commands, templatesOverride); err != nil {
 		return err
 	}
 
@@ -127,8 +128,8 @@ func loadPackageInfo() (*PackageInfo, error) {
 	return &info, nil
 }
 
-func writeConfigMjs(info *PackageInfo) error {
-	tmpl, err := template.ParseFS(templates.FS, "config.mjs.tmpl")
+func writeConfigMjs(info *PackageInfo, templatesOverride []string) error {
+	tmpl, err := templates.Load("config.mjs.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse config template: %w", err)
 	}
@@ -154,8 +155,8 @@ func writeConfigMjs(info *PackageInfo) error {
 	return nil
 }
 
-func writeSidebarMjs(info *PackageInfo, commands []CommandInfo) error {
-	tmpl, err := template.ParseFS(templates.FS, "sidebar.mjs.tmpl")
+func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, templatesOverride []string) error {
+	tmpl, err := templates.Load("sidebar.mjs.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse sidebar template: %w", err)
 	}
@@ -192,8 +193,8 @@ func writeSidebarMjs(info *PackageInfo, commands []CommandInfo) error {
 	return nil
 }
 
-func writeAstroConfigMjs() error {
-	tmpl, err := template.ParseFS(templates.FS, "astro.config.mjs.tmpl")
+func writeAstroConfigMjs(templatesOverride []string) error {
+	tmpl, err := templates.Load("astro.config.mjs.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse astro config template: %w", err)
 	}
@@ -233,7 +234,7 @@ func detectAPIPackages() ([]string, error) {
 	return pkgs, nil
 }
 
-func generateContentPage(srcFile, dstFile, title, description string) error {
+func generateContentPage(srcFile, dstFile, title, description string, templatesOverride []string) error {
 	if _, err := os.Stat(srcFile); err != nil {
 		return nil // optional source missing
 	}
@@ -242,7 +243,7 @@ func generateContentPage(srcFile, dstFile, title, description string) error {
 		return err
 	}
 
-	tmpl, err := template.ParseFS(templates.FS, "page.md.tmpl")
+	tmpl, err := templates.Load("page.md.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse page template: %w", err)
 	}
@@ -300,21 +301,21 @@ type CommandTemplateData struct {
 	SourcePath  string
 }
 
-func generateCommandPages(pkgInfo *PackageInfo, commands []CommandInfo) error {
+func generateCommandPages(pkgInfo *PackageInfo, commands []CommandInfo, templatesOverride []string) error {
 	outDir := filepath.Join("docs", "src", "content", "docs", "commands")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
 	for _, c := range commands {
-		if err := writeCommandPage(outDir, &c, pkgInfo, commands); err != nil {
+		if err := writeCommandPage(outDir, &c, pkgInfo, commands, templatesOverride); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, allCmds []CommandInfo) error {
-	tmpl, err := template.ParseFS(templates.FS, "command.md.tmpl")
+func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, allCmds []CommandInfo, templatesOverride []string) error {
+	tmpl, err := templates.Load("command.md.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse command template: %w", err)
 	}

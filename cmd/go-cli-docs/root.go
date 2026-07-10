@@ -13,6 +13,11 @@ var rootCmd = newRootCmd()
 // genAPIDocs is shared by init and generate via a persistent root flag.
 var genAPIDocs bool
 
+// templatesOverride is shared by init, generate, and watch via a persistent
+// root flag. Each entry is a path to a file or directory containing custom
+// templates that override the embedded defaults.
+var templatesOverride []string
+
 // @docs-command:root
 //
 //	name: go-cli-docs
@@ -41,6 +46,7 @@ func newRootCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Print version and exit")
 	cmd.Flags().String("config", "", "Path to config file")
 	cmd.PersistentFlags().BoolVarP(&genAPIDocs, "gen-api-docs", "a", defaultGenAPI, "Generate API documentation via gomarkdoc")
+	cmd.PersistentFlags().StringArrayVarP(&templatesOverride, "templates", "t", nil, "Path to a file or directory of custom templates overriding the embedded defaults (repeatable)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if showVersion {

@@ -7,7 +7,7 @@ import (
 )
 
 // InitAndGenerate ensures the docs folder exists, initializing Astro Starlight (version locked) if necessary, then runs generation.
-func InitAndGenerate(genAPIDocs bool) error {
+func InitAndGenerate(genAPIDocs bool, templatesOverride []string) error {
 	docsDir := "docs"
 	if _, err := os.Stat(docsDir); os.IsNotExist(err) {
 		fmt.Println("Docs directory missing – initializing Astro Starlight...")
@@ -24,13 +24,13 @@ func InitAndGenerate(genAPIDocs bool) error {
 		}
 	}
 	// Proceed with generation.
-	return Generate(genAPIDocs)
+	return Generate(genAPIDocs, templatesOverride)
 }
 
 // Generate runs the documentation generation workflow.
-func Generate(genAPIDocs bool) error {
+func Generate(genAPIDocs bool, templatesOverride []string) error {
 	fmt.Println("Running docs generation...")
-	if err := GenerateDocs(genAPIDocs); err != nil {
+	if err := GenerateDocs(genAPIDocs, templatesOverride); err != nil {
 		return fmt.Errorf("failed to generate docs: %w", err)
 	}
 	return nil

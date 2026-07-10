@@ -20,7 +20,7 @@ func TestGenerateDocsIntegration(t *testing.T) {
 	}
 
 	// Run documentation generation with API docs disabled for testing speed
-	err = GenerateDocs(false)
+	err = GenerateDocs(false, nil)
 	if err != nil {
 		t.Fatalf("GenerateDocs failed: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestGenerateDocsIntegration(t *testing.T) {
 	}
 
 	// Test idempotency by running generation again
-	err = GenerateDocs(false)
+	err = GenerateDocs(false, nil)
 	if err != nil {
 		t.Fatalf("Second GenerateDocs call (idempotency check) failed: %v", err)
 	}

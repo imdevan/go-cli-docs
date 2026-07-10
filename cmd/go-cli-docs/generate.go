@@ -46,5 +46,5 @@ func newGenerateCmd() *cobra.Command {
 }
 
 func runGenerate(genAPIDocs bool) error {
-	return workflow.Generate(genAPIDocs)
+	return workflow.Generate(genAPIDocs, templatesOverride)
 }
