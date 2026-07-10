@@ -17,6 +17,7 @@ func TestEmbeddedTemplates(t *testing.T) {
 		"command.md.tmpl",
 		"page.md.tmpl",
 		"astro.config.mjs.tmpl",
+		"custom.css.tmpl",
 	}
 
 	for _, name := range requiredFiles {

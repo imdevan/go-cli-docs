@@ -73,7 +73,12 @@ func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 		return err
 	}
 
-	// 6. Strip landing page if it exists (Astro Starlight default index.mdx)
+	// 6. Generate base custom.css if it does not already exist
+	if err := writeCustomCss(pkgInfo, templatesOverride); err != nil {
+		return err
+	}
+
+	// 7. Strip landing page if it exists (Astro Starlight default index.mdx)
 	indexMdx := filepath.Join("docs", "src", "content", "docs", "index.mdx")
 	if _, err := os.Stat(indexMdx); err == nil {
 		_ = os.Remove(indexMdx)
@@ -205,6 +210,36 @@ func writeAstroConfigMjs(templatesOverride []string) error {
 	path := filepath.Join("docs", "astro.config.mjs")
 	if err := templates.RenderToFile(tmpl, path, nil); err != nil {
 		return fmt.Errorf("failed to write astro.config.mjs: %w", err)
+	}
+	return nil
+}
+
+func writeCustomCss(info *PackageInfo, templatesOverride []string) error {
+	path := filepath.Join("docs", "src", "styles", "custom.css")
+	if _, err := os.Stat(path); err == nil {
+		// File already exists, do not overwrite
+		return nil
+	}
+
+	// Create directory if it does not exist
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	tmpl, err := templates.Load("custom.css.tmpl", templatesOverride)
+	if err != nil {
+		return fmt.Errorf("failed to parse custom css template: %w", err)
+	}
+
+	data := struct {
+		ProjectName string
+	}{
+		ProjectName: info.Name,
+	}
+
+	if err := templates.RenderToFile(tmpl, path, data); err != nil {
+		return fmt.Errorf("failed to write custom.css: %w", err)
 	}
 	return nil
 }
