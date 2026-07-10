@@ -1,51 +1,72 @@
 ---
 title: Install
-description: Installation instructions for go-cli-template
+description: Installation instructions for go-cli-docs
 ---
 
+## Recommended: Just add this to your justfile 
 
-This template is currently setup to build and deploy to homebrew and AUR. 
-
-Because that is what I use so that that is what I have capacity to test at the moment. 
-
-This package `go-cli-template` is built and actually deployed to homebrew and aur to demonstrate the usage of the deployment scripts. 
-
-## Homebrew
 ```bash
-brew install imdevan/go-cli-template/go-cli-template
+_install-go-cli-docs:
+    GOBIN=$(PWD)/bin go install "github.com/imdevan/go-cli-docs/cmd/go-cli-docs@v1.0.0"
+      
+# Documentation tasks
+docs-init args="": _install-go-cli-docs
+	./bin/go-cli-docs init {{args}}
+
+docs-generate args="": _install-go-cli-docs
+	./bin/go-cli-docs generate {{args}}
+
+docs-dev args="": _install-go-cli-docs
+	./bin/go-cli-docs watch {{args}} & cd docs && bun install && bun run dev
 ```
 
-## Arch (AUR)
+This will install the package in bin for use with your project. 
+
 ```bash
-yay -S go-cli-template
+just docs-init      # init docs
+just docs-generate  # generate docs
+just docs-dev       # watch for changes and run dev server
 ```
 
-## GitHub Release
+## Global use
 
-Download the latest binary for your platform from the [releases page](https://github.com/imdevan/go-cli-template/releases).
+### homebrew
+```bash
+brew install imdevan/go-cli-docs/go-cli-docs
+```
+
+### arch (aur)
+```bash
+yay -s go-cli-docs
+```
+
+### github release
+
+download the latest binary for your platform from the [releases page](https://github.com/imdevan/go-cli-docs/releases).
 
 ```bash
-# Linux (amd64)
-curl -L https://github.com/imdevan/go-cli-template/releases/latest/download/go-cli-template-linux-amd64.tar.gz | tar -xz
-sudo mv go-cli-template-linux-amd64 /usr/local/bin/go-cli-template
+# linux (amd64)
+curl -l https://github.com/imdevan/go-cli-docs/releases/latest/download/go-cli-template-linux-amd64.tar.gz | tar -xz
+sudo mv go-cli-docs-linux-amd64 /usr/local/bin/go-cli-template
 ```
 
 ```bash
-# macOS (Apple Silicon)
-curl -L https://github.com/imdevan/go-cli-template/releases/latest/download/go-cli-template-darwin-arm64.tar.gz | tar -xz
-sudo mv go-cli-template-darwin-arm64 /usr/local/bin/go-cli-template
+# macos (apple silicon)
+curl -l https://github.com/imdevan/go-cli-docs/releases/latest/download/go-cli-template-darwin-arm64.tar.gz | tar -xz
+sudo mv go-cli-docs-darwin-arm64 /usr/local/bin/go-cli-template
 ```
 
 ```bash
-# macOS (Intel)
-curl -L https://github.com/imdevan/go-cli-template/releases/latest/download/go-cli-template-darwin-amd64.tar.gz | tar -xz
-sudo mv go-cli-template-darwin-amd64 /usr/local/bin/go-cli-template
+# macos (intel)
+curl -l https://github.com/imdevan/go-cli-docs/releases/latest/download/go-cli-template-darwin-amd64.tar.gz | tar -xz
+sudo mv go-cli-docs-darwin-amd64 /usr/local/bin/go-cli-template
 ```
 
-## Manual
+## manual
 ```bash
-gh repo clone imdevan/go-cli-template
-cd go-cli-template
+gh repo clone imdevan/go-cli-docs
+cd go-cli-docs
 just build
 sudo just install
 ```
+

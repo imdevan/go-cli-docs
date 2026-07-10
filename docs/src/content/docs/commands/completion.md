@@ -8,9 +8,9 @@ Generate shell completion scripts
 ## Usage
 
 ```bash
-go-cli-template completion [bash|zsh|fish|powershell]
+go-cli-docs completion [bash|zsh|fish|powershell]
 ```
 
 ## Source
 
-See [completion.go](https://github.com/imdevan/go-cli-template//blob/main/cmd/go-cli-template/completion.go) for implementation details.
+See [completion.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/completion.go) for implementation details.

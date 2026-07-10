@@ -1,8 +1,9 @@
 ---
 title: Contributing
-description: Contributing to go-cli-template
+description: Contributing to go-cli-docs
 ---
 
+# Contributing
 
 ## Setup
 
@@ -25,3 +26,4 @@ just test         # run tests
 1. Fork the repo and create a branch from `main`
 2. Make your changes and ensure tests pass (`just test`)
 3. Open a pull request with a clear description of what changed and why
+

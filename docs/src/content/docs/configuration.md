@@ -1,8 +1,9 @@
 ---
 title: Configuration
-description: Configuration options for go-cli-template
+description: Configuration options for go-cli-docs
 ---
 
+# Configuration
 
 Configuration file location: `$XDG_CONFIG_HOME/go-cli-template/config.toml`
 
@@ -96,3 +97,4 @@ bookmark config
 ```
 
 This will open the config file in your configured editor.
+
