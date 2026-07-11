@@ -474,11 +474,7 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 	// Prepare Usage
 	var usage string
 	if cmdInfo.CmdName == pkgInfo.Name {
-		useVal := cmdInfo.Use
-		if useVal == "" || useVal == "null" {
-			useVal = fmt.Sprintf("%s [command]", pkgInfo.Name)
-		}
-		usage = fmt.Sprintf("```bash\n%s\n```", useVal)
+		usage = fmt.Sprintf("```bash\n%s\n```", pkgInfo.Name)
 	} else {
 		useVal := cmdInfo.Use
 		if useVal == "" || useVal == "null" {
