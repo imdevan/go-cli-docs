@@ -18,9 +18,7 @@ const sidebar = [
   { label: 'Install', link: '/install' },
   { label: 'Commands', items: [
     { label: '{{ .ProjectName }}', link: '/commands/{{ .ProjectName }}' },
-{{- range .Commands }}
-    { label: '{{ .Name }}', link: '/commands/{{ .Name }}' },
-{{- end }}
+{{ .CommandsJS }}
   ] },
   { label: 'Configuration', link: '/configuration' },
 ];
