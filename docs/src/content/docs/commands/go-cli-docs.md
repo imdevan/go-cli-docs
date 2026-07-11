@@ -29,7 +29,6 @@ go-cli-docs
 | Flag | Type | Description |
 |------|------|-------------|
 | -v, --version | bool | Print version and exit |
-| --config | string | Path to config file |
 | -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
 | -t, --templates | stringarray | Path to a file or directory of custom templates overriding the embedded defaults (repeatable) |
 
