@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/imdevan/go-cli-docs/internal/templates"
@@ -55,6 +56,46 @@ func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 		}
 		if commands[i].CmdName == "root" || filepath.Base(commands[i].GoFile) == "root.go" || strings.Contains(strings.ToLower(commands[i].VarName), "rootcmd") {
 			commands[i].CmdName = pkgInfo.Name
+		}
+		commands[i].Path = []string{commands[i].CmdName}
+	}
+
+	relations, relErr := parseCommandRelations("./cmd/" + pkgInfo.Name)
+	if relErr == nil {
+		varNameToCmdName := make(map[string]string)
+		for _, c := range commands {
+			varNameToCmdName[c.VarName] = c.CmdName
+		}
+
+		for i := range commands {
+			if commands[i].CmdName == pkgInfo.Name {
+				continue
+			}
+
+			var chain []string
+			current := commands[i].VarName
+			for {
+				parent, exists := relations[current]
+				if !exists {
+					break
+				}
+				chain = append([]string{parent}, chain...)
+				current = parent
+			}
+
+			if len(chain) > 0 {
+				var nameParts []string
+				for _, parentVar := range chain {
+					if parentCmdName, ok := varNameToCmdName[parentVar]; ok {
+						if parentCmdName != pkgInfo.Name {
+							nameParts = append(nameParts, parentCmdName)
+						}
+					}
+				}
+				nameParts = append(nameParts, commands[i].CmdName)
+				commands[i].Path = nameParts
+				commands[i].CmdName = strings.Join(nameParts, "-")
+			}
 		}
 	}
 
@@ -169,15 +210,8 @@ func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, templatesOverrid
 		return fmt.Errorf("failed to parse sidebar template: %w", err)
 	}
 
-	var sidebarCmds []struct {
-		Name string
-	}
-	for _, c := range commands {
-		if c.CmdName == info.Name {
-			continue // skip root command in loop
-		}
-		sidebarCmds = append(sidebarCmds, struct{ Name string }{Name: c.CmdName})
-	}
+	tree := buildSidebarTree(commands, info.Name)
+	commandsJS := formatSidebarItems(tree, "    ")
 
 	apiPackages, err := detectAPIPackages()
 	if err != nil {
@@ -186,11 +220,11 @@ func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, templatesOverrid
 
 	data := struct {
 		ProjectName string
-		Commands    []struct{ Name string }
+		CommandsJS  string
 		APIPackages []string
 	}{
 		ProjectName: info.Name,
-		Commands:    sidebarCmds,
+		CommandsJS:  commandsJS,
 		APIPackages: apiPackages,
 	}
 
@@ -476,9 +510,18 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 	if cmdInfo.CmdName == pkgInfo.Name {
 		usage = fmt.Sprintf("```bash\n%s\n```", pkgInfo.Name)
 	} else {
+		parentPath := ""
+		if len(cmdInfo.Path) > 1 {
+			parentPath = strings.Join(cmdInfo.Path[:len(cmdInfo.Path)-1], " ")
+		}
+
 		useVal := cmdInfo.Use
 		if useVal == "" || useVal == "null" {
-			useVal = cmdInfo.CmdName
+			useVal = strings.Join(cmdInfo.Path, " ")
+		} else if parentPath != "" {
+			if !strings.HasPrefix(useVal, parentPath) {
+				useVal = parentPath + " " + useVal
+			}
 		}
 		usage = fmt.Sprintf("```bash\n%s %s\n```", pkgInfo.Name, useVal)
 	}
@@ -510,7 +553,7 @@ func writeCommandPage(dir string, cmdInfo *CommandInfo, pkgInfo *PackageInfo, al
 	sourcePath := filepath.Join("cmd", pkgInfo.Name, sourceFile)
 
 	data := CommandTemplateData{
-		Name:        cmdInfo.CmdName,
+		Name:        strings.Join(cmdInfo.Path, " "),
 		Description: desc,
 		Doc:         docText,
 		Usage:       usage,
@@ -628,4 +671,93 @@ func generateAPIDocs(pkgInfo *PackageInfo) error {
 		}
 	}
 	return nil
+}
+
+type SidebarItem struct {
+	Label string
+	Link  string
+	Items []*SidebarItem
+}
+
+func buildSidebarTree(commands []CommandInfo, rootName string) []*SidebarItem {
+	var rootItems []*SidebarItem
+
+	findItem := func(items []*SidebarItem, label string) *SidebarItem {
+		for _, item := range items {
+			if item.Label == label {
+				return item
+			}
+		}
+		return nil
+	}
+
+	sortedCmds := make([]CommandInfo, len(commands))
+	copy(sortedCmds, commands)
+	sort.Slice(sortedCmds, func(i, j int) bool {
+		return sortedCmds[i].CmdName < sortedCmds[j].CmdName
+	})
+
+	for _, c := range sortedCmds {
+		if c.CmdName == rootName {
+			continue // Skip root command
+		}
+
+		parts := c.Path
+		
+		currentLevel := &rootItems
+		var currentPath []string
+
+		for i, part := range parts {
+			currentPath = append(currentPath, part)
+			label := strings.Join(currentPath, " ")
+			isLast := (i == len(parts)-1)
+
+			if isLast {
+				existing := findItem(*currentLevel, part)
+				if existing != nil {
+					existing.Link = "/commands/" + c.CmdName
+				} else {
+					*currentLevel = append(*currentLevel, &SidebarItem{
+						Label: label,
+						Link:  "/commands/" + c.CmdName,
+					})
+				}
+			} else {
+				existing := findItem(*currentLevel, part)
+				if existing == nil {
+					newGroup := &SidebarItem{
+						Label: part,
+					}
+					*currentLevel = append(*currentLevel, newGroup)
+					existing = newGroup
+				} else if existing.Link != "" && len(existing.Items) == 0 {
+					selfCopy := &SidebarItem{
+						Label: existing.Label,
+						Link:  existing.Link,
+					}
+					existing.Link = ""
+					existing.Items = append(existing.Items, selfCopy)
+				}
+				currentLevel = &existing.Items
+			}
+		}
+	}
+	return rootItems
+}
+
+func formatSidebarItems(items []*SidebarItem, indent string) string {
+	var sb strings.Builder
+	for _, item := range items {
+		if len(item.Items) > 0 {
+			sb.WriteString(fmt.Sprintf("%s{\n", indent))
+			sb.WriteString(fmt.Sprintf("%s  label: '%s',\n", indent, item.Label))
+			sb.WriteString(fmt.Sprintf("%s  items: [\n", indent))
+			sb.WriteString(formatSidebarItems(item.Items, indent+"    "))
+			sb.WriteString(fmt.Sprintf("%s  ],\n", indent))
+			sb.WriteString(fmt.Sprintf("%s},\n", indent))
+		} else {
+			sb.WriteString(fmt.Sprintf("%s{ label: '%s', link: '%s' },\n", indent, item.Label, item.Link))
+		}
+	}
+	return sb.String()
 }

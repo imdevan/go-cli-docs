@@ -195,3 +195,137 @@ Body`,
 	}
 }
 
+func TestParseCommandRelations(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "cmd_relations_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Write root.go
+	rootContent := `package main
+import "github.com/spf13/cobra"
+func newRootCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "app"}
+	cmd.AddCommand(newConfigCmd())
+	return cmd
+}`
+	if err := os.WriteFile(filepath.Join(tmpDir, "root.go"), []byte(rootContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write config.go
+	configContent := `package main
+import "github.com/spf13/cobra"
+func newConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "config"}
+	cmd.AddCommand(newConfigInitCmd())
+	return cmd
+}`
+	if err := os.WriteFile(filepath.Join(tmpDir, "config.go"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write config_init.go
+	configInitContent := `package main
+import "github.com/spf13/cobra"
+func newConfigInitCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "init"}
+	return cmd
+}`
+	if err := os.WriteFile(filepath.Join(tmpDir, "config_init.go"), []byte(configInitContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	relations, err := parseCommandRelations(tmpDir)
+	if err != nil {
+		t.Fatalf("parseCommandRelations failed: %v", err)
+	}
+
+	expected := map[string]string{
+		"newConfigCmd":     "newRootCmd",
+		"newConfigInitCmd": "newConfigCmd",
+	}
+
+	if len(relations) != len(expected) {
+		t.Errorf("expected %d relations, got %d: %v", len(expected), len(relations), relations)
+	}
+
+	for k, v := range expected {
+		if gotVal, ok := relations[k]; !ok || gotVal != v {
+			t.Errorf("expected relations[%q] = %q, got %q", k, v, gotVal)
+		}
+	}
+}
+
+func TestBuildSidebarTree(t *testing.T) {
+	commands := []CommandInfo{
+		{CmdName: "completion", Path: []string{"completion"}},
+		{CmdName: "config", Path: []string{"config"}},
+		{CmdName: "config-init", Path: []string{"config", "init"}},
+		{CmdName: "some-command", Path: []string{"some-command"}},
+		{CmdName: "some-command-init", Path: []string{"some-command", "init"}},
+		{CmdName: "go-cli-template", Path: []string{"go-cli-template"}}, // root command, should be skipped
+	}
+
+	tree := buildSidebarTree(commands, "go-cli-template")
+	if len(tree) != 3 {
+		t.Fatalf("expected 3 root items, got %d", len(tree))
+	}
+
+	// First item: completion
+	if tree[0].Label != "completion" || tree[0].Link != "/commands/completion" || len(tree[0].Items) != 0 {
+		t.Errorf("unexpected structure for completion node: %+v", tree[0])
+	}
+
+	// Second item: config (should be a group containing itself and config-init)
+	configNode := tree[1]
+	if configNode.Label != "config" || configNode.Link != "" || len(configNode.Items) != 2 {
+		t.Fatalf("unexpected structure for config group: %+v", configNode)
+	}
+
+	if configNode.Items[0].Label != "config" || configNode.Items[0].Link != "/commands/config" {
+		t.Errorf("unexpected first item of config: %+v", configNode.Items[0])
+	}
+
+	if configNode.Items[1].Label != "config init" || configNode.Items[1].Link != "/commands/config-init" {
+		t.Errorf("unexpected second item of config: %+v", configNode.Items[1])
+	}
+
+	// Third item: some-command (hyphen preserved, group containing itself and init)
+	someCmdNode := tree[2]
+	if someCmdNode.Label != "some-command" || someCmdNode.Link != "" || len(someCmdNode.Items) != 2 {
+		t.Fatalf("unexpected structure for some-command group: %+v", someCmdNode)
+	}
+
+	if someCmdNode.Items[0].Label != "some-command" || someCmdNode.Items[0].Link != "/commands/some-command" {
+		t.Errorf("unexpected first item of some-command: %+v", someCmdNode.Items[0])
+	}
+
+	if someCmdNode.Items[1].Label != "some-command init" || someCmdNode.Items[1].Link != "/commands/some-command-init" {
+		t.Errorf("unexpected second item of some-command: %+v", someCmdNode.Items[1])
+	}
+
+	// Verify formatting output
+	formatted := formatSidebarItems(tree, "    ")
+	expectedJS := `    { label: 'completion', link: '/commands/completion' },
+    {
+      label: 'config',
+      items: [
+        { label: 'config', link: '/commands/config' },
+        { label: 'config init', link: '/commands/config-init' },
+      ],
+    },
+    {
+      label: 'some-command',
+      items: [
+        { label: 'some-command', link: '/commands/some-command' },
+        { label: 'some-command init', link: '/commands/some-command-init' },
+      ],
+    },
+`
+	if formatted != expectedJS {
+		t.Errorf("unexpected formatted JS:\n%s\nExpected:\n%s", formatted, expectedJS)
+	}
+}
+

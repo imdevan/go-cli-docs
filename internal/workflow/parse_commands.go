@@ -36,6 +36,7 @@ type CommandInfo struct {
 	Short      string          `json:"short"`
 	HasCommand bool            `json:"has_command"`
 	FlagGroups []FlagGroupInfo `json:"flag_groups"`
+	Path       []string        `json:"path"`
 }
 
 func parseCommands(dir string) ([]CommandInfo, error) {
@@ -749,4 +750,87 @@ func parseDocsCommandBlock(text string) (name, description, example, note string
 	}
 	flush()
 	return
+}
+
+func parseCommandRelations(dir string) (map[string]string, error) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	relations := make(map[string]string)
+	fset := token.NewFileSet()
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		name := f.Name()
+		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") || name == "main.go" {
+			continue
+		}
+
+		filePath := filepath.Join(dir, name)
+		file, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+		if err != nil {
+			continue
+		}
+
+		// Inspect all declarations in this file
+		for _, decl := range file.Decls {
+			if fdecl, ok := decl.(*ast.FuncDecl); ok {
+				funcName := fdecl.Name.Name
+				if fdecl.Body == nil {
+					continue
+				}
+				ast.Inspect(fdecl.Body, func(n ast.Node) bool {
+					call, ok := n.(*ast.CallExpr)
+					if !ok {
+						return true
+					}
+					sel, ok := call.Fun.(*ast.SelectorExpr)
+					if !ok || sel.Sel.Name != "AddCommand" {
+						return true
+					}
+
+					var parentName string
+					if ident, ok := sel.X.(*ast.Ident); ok {
+						if funcName == "init" || (ident.Name != "cmd" && ident.Name != "c") {
+							parentName = ident.Name
+						} else {
+							parentName = funcName
+						}
+					} else {
+						parentName = funcName
+					}
+
+					for _, arg := range call.Args {
+						childName := resolveCommandRefName(arg)
+						if childName != "" {
+							relations[childName] = parentName
+						}
+					}
+					return true
+				})
+			}
+		}
+	}
+	return relations, nil
+}
+
+func resolveCommandRefName(expr ast.Expr) string {
+	switch e := expr.(type) {
+	case *ast.CallExpr:
+		if ident, ok := e.Fun.(*ast.Ident); ok {
+			return ident.Name
+		}
+		if sel, ok := e.Fun.(*ast.SelectorExpr); ok {
+			return sel.Sel.Name
+		}
+	case *ast.Ident:
+		return e.Name
+	case *ast.SelectorExpr:
+		return e.Sel.Name
+	}
+	return ""
 }
