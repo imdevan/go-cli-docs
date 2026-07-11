@@ -6,18 +6,14 @@ A go cli to build docs for your go cli.
 
 ## Features
 
-- Interactive list with filtering
 - [Built on go Cobra](https://github.com/spf13/cobra)
-- Configuration management with TOML
-- Styles, build scripts, and tests to get you started.
-- [Inline Bubble Tea TUI components](https://github.com/charmbracelet/bubbletea)
-- Homebrew and aur package management with TOML too!
-- Automatic documentation with [gomarkdoc](https://github.com/princjef/gomarkdoc) and [astro starlight](https://starlight.astro.build/)
-  - With automated github deployment workflow
-- [Just](https://just.systems/) recipes to build and release to your favorite package manager
-  - homebrew tap, AUR, Github release, and manual download are currently supported
-- XDG Base Directory support
-- Utils for NerdFont, and Editor interaction
+- Scaffolds [Astro Starlight](https://starlight.astro.build/) docs site with a single command
+- Automatic documentation generated from Go source and project markdown files
+  - Command pages parsed directly from Cobra command definitions
+  - API reference pages via [gomarkdoc](https://github.com/princjef/gomarkdoc)
+- Live-reload watcher — reruns `generate` whenever source files change
+- [Just](https://just.systems/) recipes to build, test, and release
+  - Homebrew tap, AUR, GitHub release, and manual download supported
 - Integration and unit tested
 - Shell completion (bash, zsh, fish, powershell)
 
@@ -38,14 +34,22 @@ If you're here; those projects may also interest you! :)
 
 ## Quick start
 
-
 ```bash
 # Clone the repo
-gh repo clone imdevan/go-cli-template
-cd go-cli-template
+gh repo clone imdevan/go-cli-docs
+cd go-cli-docs
 
-# Just build and run
-just build-run
+# Build the binary
+just build
+
+# Scaffold a new Astro Starlight docs site (inside your target project)
+go-cli-docs init
+
+# Generate docs from source
+go-cli-docs generate
+
+# Watch for changes and regenerate automatically
+go-cli-docs watch
 ```
 
 ## Using this as a template
@@ -77,7 +81,6 @@ docs_base   = "/my-tool"
 
 - Go module name in `go.mod` and all import paths throughout `internal/` and `cmd/`
 - Binary name in the justfile and build scripts
-- Config directory paths in `internal/utils/paths.go`
 - Shell completion examples
 - README description block
 - Version constant in `cmd/*/root.go`
@@ -157,52 +160,95 @@ Items marked `*` are updated by `just sync`.
 ├── justfile                    # Just run commands *
 ├── README.md                   # You are here      *
 │
-├── cmd/                        # CLI commands
-│   └── go-cli-template/        # Renamed with just sync      *
+├── cmd/
+│   └── go-cli-docs/
 │       ├── main.go             # Binary entry point
-│       ├── root.go             # Root command, config wiring, app init
-│       ├── config.go           # `config` subcommand
-│       ├── config_init.go      # `config init` subcommand
-│       └── completion.go       # Shell completion subcommand *
+│       ├── root.go             # Root command & global flags
+│       ├── init.go             # `init` sub-command  — scaffold Astro Starlight
+│       ├── generate.go         # `generate` sub-command — run docs pipeline
+│       ├── watch.go            # `watch` sub-command  — fsnotify file watcher
+│       └── completion.go       # Shell completion sub-command *
 │
 └── internal/
     ├── package/
     │   └── package.toml        # Source of truth — edit this, then run just sync
     │
     ├── app/                    # Application bootstrap
-    ├── config/                 # Loads and parses config.toml
     ├── domain/                 # Core types and data models
     ├── errors/                 # Shared error types
-    ├── workflow/               # Business logic layer
-    ├── ui/                     # Bubble Tea TUI components
-    │   ├── list.go             # Interactive filterable list
-    │   ├── theme.go            # Color/style definitions
-    │   ├── confirmation.go     # Yes/no prompt
-    │   ├── textarea.go         # Multi-line text input
-    │   ├── help.go             # Help bar
-    │   ├── container.go        # Layout helpers
-    │   ├── exit_message.go     # Post-exit message rendering
-    │   └── responsive.go       # Terminal size utilities
-    ├── adapters/               # Thin wrappers around external interactions
-    │   ├── editor/             # Opens files in the user's configured editor
-    │   ├── clipboard/          # Read/write system clipboard
-    │   ├── shell/              # Shell command execution
-    │   ├── tty/                # TTY detection
-    │   └── icon/               # Nerd Font icon helpers
+    ├── templates/              # Embedded Go templates (*.tmpl)
+    ├── workflow/               # Docs-generation pipeline logic
     ├── utils/                  # Stateless helpers
     │   ├── paths.go            # XDG config/data/cache path resolution
     │   └── time.go             # Time formatting helpers
-    ├── testutil/               # Shared test fixtures and helpers
-    └── package/                # Reads package.toml metadata at runtime
+    └── testutil/               # Shared test fixtures and helpers
 ```
 
 ## Commands
 
+### `go-cli-docs init`
+
+Scaffolds an Astro Starlight `docs/` directory inside your project, installs dependencies, and runs an initial `generate`.
+
 ```bash
-go-cli-template                 # Root command (placeholder shows folder content)
-go-cli-template config          # View or edit configuration
-go-cli-template config init     # Generate default config file
-go-cli-template completion      # Generate shell completion scripts
+# Scaffold with the default package manager (bun)
+go-cli-docs init
+
+# Use a different package manager
+go-cli-docs init --pkg-manager npm
+go-cli-docs init --pkg-manager yarn
+go-cli-docs init --pkg-manager pnpm
+```
+
+> If `docs/` already exists, `init` is a no-op — safe to re-run.
+
+### `go-cli-docs generate`
+
+Runs the full documentation-generation pipeline:
+
+1. Reads `internal/package/package.toml` metadata
+2. Generates markdown content pages (README, INSTALL, CONFIG, CONTRIBUTING)
+3. Parses Cobra command definitions and writes command pages
+4. Generates API reference pages via [gomarkdoc](https://github.com/princjef/gomarkdoc)
+5. Writes `docs/config.mjs` and `docs/sidebar.mjs`
+
+```bash
+# Generate all docs (including API reference)
+go-cli-docs generate
+
+# Skip gomarkdoc API docs generation
+go-cli-docs generate --gen-api-docs=false
+```
+
+### `go-cli-docs watch`
+
+Monitors source files for changes and automatically re-runs `generate`. Run the Astro dev server in a separate terminal for a live-preview workflow.
+
+Watched patterns: `*.md`, `*.go`, `*.toml`  
+Excluded paths: `node_modules/`, `docs/src/content/docs/`, `.git/`
+
+```bash
+# Watch and regenerate on every source change
+go-cli-docs watch
+
+# Watch without regenerating API reference docs
+go-cli-docs watch --gen-api-docs=false
+
+# Full live-preview workflow (two terminals)
+go-cli-docs watch          # terminal 1 — watches & regenerates
+cd docs && bun run dev     # terminal 2 — Astro dev server
+
+# Or use the justfile shortcut (runs both in one command)
+just docs-dev
+```
+
+### Shell completion
+
+```bash
+go-cli-docs completion bash   # bash
+go-cli-docs completion zsh    # zsh
+go-cli-docs completion fish   # fish
+go-cli-docs completion powershell  # PowerShell
 ```
 
 ## Development
@@ -235,9 +281,9 @@ just sync            # Sync all project files from package.toml metadata
 ### Documentation
 
 ```bash
-just docs-init       # Install documentation dependencies (bun install)
-just docs-generate   # Generate API docs and content pages from source
-just docs-dev        # Generate docs and start local dev server
+just docs-init       # Scaffold Astro Starlight docs/ (runs go-cli-docs init)
+just docs-generate   # Generate all docs from source (runs go-cli-docs generate)
+just docs-dev        # Watch for changes + start Astro dev server
 just docs-build      # Generate docs and build production site
 just docs-preview    # Preview the production build locally
 just docs-clean      # Remove generated docs and build artifacts
@@ -265,53 +311,45 @@ just deploy-homebrew 1.0.0  # Deploy to Homebrew tap
 just deploy-all 1.0.0       # Deploy to all targets
 ```
 
-## Configuration
+## Global Flags
 
-Configuration is stored at `$XDG_CONFIG_HOME/go-cli-template/config.toml` (typically `~/.config/go-cli-template/config.toml`).
+All three commands (`init`, `generate`, `watch`) share these persistent root-level flags:
 
-### Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `editor` | string | `nvim` | Editor opened by `config` and other editor-aware commands |
-| `interactive_default` | bool | `false` | Start in interactive TUI mode when no arguments are given |
-| `list_spacing` | string | `space` | List density: `compact` (title only), `tight` (title + description), `space` (with margins) |
-| `headings` | string | `15` | Heading color |
-| `primary` | string | `02` | Primary accent color |
-| `secondary` | string | `06` | Secondary accent color |
-| `text` | string | `07` | Body text color |
-| `text_highlight` | string | `06` | Highlighted text color |
-| `description_highlight` | string | `05` | Highlighted description color |
-| `tags` | string | `13` | Tags color |
-| `flags` | string | `12` | Flags/key color |
-| `muted` | string | `08` | Muted/dimmed text color |
-| `border` | string | `08` | Border color |
-
-Colors accept named values, terminal palette indices, or hex strings (e.g. `7`, `"#ff8800"`).
-
-### How configuration flows through the project
-
-- `internal/config` loads and parses `config.toml` at startup, providing a `Config` struct available to all commands.
-- `internal/utils/paths.go` uses XDG paths derived from the project name to locate the config file.
-- `internal/ui` reads color and spacing values from config to build Bubble Tea styles — all theme colors come from the loaded config rather than hardcoded constants.
-- `internal/adapters/editor` uses the `editor` field to open files in the user's preferred editor.
-- The `interactive_default` flag controls whether the root command drops into the TUI automatically or requires an explicit argument.
-
-To generate a config file with defaults:
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--gen-api-docs` | `-a` | bool | `true` | Generate API reference via gomarkdoc |
+| `--templates` | `-t` | string (repeatable) | — | Path to a file or directory of custom templates overriding the embedded defaults |
+| `--version` | `-v` | bool | `false` | Print version and exit |
 
 ```bash
-go-cli-template config init
-go-cli-template config init --force    # Overwrite existing
-go-cli-template config init --editor   # Create and open in editor
+# Disable API docs generation for faster runs
+go-cli-docs generate --gen-api-docs=false
+go-cli-docs watch --gen-api-docs=false
+
+# Use one or more custom template overrides
+go-cli-docs generate --templates ./my-templates
+go-cli-docs generate -t ./override1 -t ./override2
+
+# Print version
+go-cli-docs --version
 ```
 
-To edit the config directly:
+## Project Metadata
 
-```bash
-go-cli-template config
+The single source of truth for project metadata is `internal/package/package.toml`.
+Edit it and re-run `go-cli-docs generate` to propagate changes across all generated docs.
+
+```toml
+name        = "my-tool"
+module      = "github.com/you/my-tool"
+description = "What my tool does"
+version     = "0.1.0"
+repository  = "https://github.com/you/my-tool"
+docs_site   = "https://you.github.io"
+docs_base   = "/my-tool"
 ```
 
-See `CONFIG.md` for the full reference or `example-config.toml` for a ready-to-copy example.
+See `CONFIG.md` for the full reference.
 
 ## Installation
 
