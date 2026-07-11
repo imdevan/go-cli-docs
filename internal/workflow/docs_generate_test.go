@@ -85,3 +85,113 @@ func TestGenerateDocsIntegration(t *testing.T) {
 		t.Fatalf("Second GenerateDocs call (idempotency check) failed: %v", err)
 	}
 }
+
+func TestGenerateContentPage(t *testing.T) {
+	orig, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(orig) //nolint:errcheck
+
+	if err := os.Chdir("../.."); err != nil {
+		t.Fatalf("failed to change directory to project root: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		srcContent    string
+		defaultTitle  string
+		expectedTitle string
+		expectedBody  string
+	}{
+		{
+			name: "h1 header first line",
+			srcContent: `# Hello World
+This is a test.`,
+			defaultTitle:  "Default",
+			expectedTitle: "Hello World",
+			expectedBody:  "\nThis is a test.",
+		},
+		{
+			name: "h1 header with empty lines before it",
+			srcContent: `
+
+# Custom Title
+
+Body goes here.`,
+			defaultTitle:  "Default",
+			expectedTitle: "Custom Title",
+			expectedBody:  "\n\n\nBody goes here.",
+		},
+		{
+			name: "h1 header with trailing hash",
+			srcContent: `# Trailing Hash #
+Body`,
+			defaultTitle:  "Default",
+			expectedTitle: "Trailing Hash",
+			expectedBody:  "\nBody",
+		},
+		{
+			name: "no h1 header (starts with h2)",
+			srcContent: `## Subheading
+Body`,
+			defaultTitle:  "Default",
+			expectedTitle: "Default",
+			expectedBody:  "## Subheading\nBody",
+		},
+		{
+			name: "no h1 header (starts with text)",
+			srcContent: `Hello
+## Subheading
+Body`,
+			defaultTitle:  "Default",
+			expectedTitle: "Default",
+			expectedBody:  "Hello\n## Subheading\nBody",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Write temp source file
+			srcFile := "test_temp_src.md"
+			if err := os.WriteFile(srcFile, []byte(tt.srcContent), 0644); err != nil {
+				t.Fatalf("failed to write temp source file: %v", err)
+			}
+			defer os.Remove(srcFile)
+
+			dstFile := "test_temp_dst.md"
+			dstPath := filepath.Join("docs", "src", "content", "docs", dstFile)
+			defer os.Remove(dstPath)
+
+			// Run generation
+			if err := generateContentPage(srcFile, dstFile, tt.defaultTitle, "Test desc", nil); err != nil {
+				t.Fatalf("generateContentPage failed: %v", err)
+			}
+
+			// Read generated file
+			gotBytes, err := os.ReadFile(dstPath)
+			if err != nil {
+				t.Fatalf("failed to read generated file: %v", err)
+			}
+			gotContent := string(gotBytes)
+
+			// Verify title in frontmatter
+			expectedFrontmatterTitle := "title: " + tt.expectedTitle
+			if !strings.Contains(gotContent, expectedFrontmatterTitle) {
+				t.Errorf("expected frontmatter to contain %q, got:\n%s", expectedFrontmatterTitle, gotContent)
+			}
+
+			// Verify that the body content is as expected (usually after the frontmatter --- block)
+			parts := strings.Split(gotContent, "---")
+			if len(parts) < 3 {
+				t.Fatalf("invalid generated markdown frontmatter format:\n%s", gotContent)
+			}
+			gotBody := strings.TrimSpace(strings.Join(parts[2:], "---"))
+			expectedBodyTrimmed := strings.TrimSpace(tt.expectedBody)
+			if gotBody != expectedBodyTrimmed {
+				t.Errorf("expected body %q, got %q", expectedBodyTrimmed, gotBody)
+			}
+		})
+	}
+}
+

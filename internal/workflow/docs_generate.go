@@ -272,6 +272,34 @@ func detectAPIPackages() ([]string, error) {
 	return pkgs, nil
 }
 
+// extractMarkdownTitle checks if the first non-empty line of content is an H1 header.
+// If it is, it returns the title extracted from the header and the content with that header line removed.
+// Otherwise, it returns the defaultTitle and the original content.
+func extractMarkdownTitle(content string, defaultTitle string) (string, string) {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmedLine, "#") {
+			rest := trimmedLine[1:]
+			if len(rest) > 0 && (rest[0] == ' ' || rest[0] == '\t') {
+				titleVal := strings.TrimSpace(rest)
+				titleVal = strings.TrimRight(titleVal, "#")
+				title := strings.TrimSpace(titleVal)
+
+				var filtered []string
+				filtered = append(filtered, lines[:i]...)
+				filtered = append(filtered, lines[i+1:]...)
+				return title, strings.Join(filtered, "\n")
+			}
+		}
+		break
+	}
+	return defaultTitle, content
+}
+
 func generateContentPage(srcFile, dstFile, title, description string, templatesOverride []string) error {
 	if _, err := os.Stat(srcFile); err != nil {
 		return nil // optional source missing
@@ -280,6 +308,8 @@ func generateContentPage(srcFile, dstFile, title, description string, templatesO
 	if err != nil {
 		return err
 	}
+
+	title, content := extractMarkdownTitle(string(data), title)
 
 	tmpl, err := templates.Load("page.md.tmpl", templatesOverride)
 	if err != nil {
@@ -299,7 +329,7 @@ func generateContentPage(srcFile, dstFile, title, description string, templatesO
 	}{
 		Title:       title,
 		Description: description,
-		Content:     string(data),
+		Content:     content,
 	}
 
 	if err := templates.RenderToFile(tmpl, dstPath, templateData); err != nil {
