@@ -15,14 +15,6 @@ func TestRootCommandHasVersion(t *testing.T) {
 	}
 }
 
-func TestRootCommandHasConfig(t *testing.T) {
-	cmd := newRootCmd()
-	configFlag := cmd.Flags().Lookup("config")
-	if configFlag == nil {
-		t.Fatal("expected --config flag to be registered")
-	}
-}
-
 func TestResolvedVersion(t *testing.T) {
 	ver := resolvedVersion()
 	if ver == "" {

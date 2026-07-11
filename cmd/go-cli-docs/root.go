@@ -44,7 +44,6 @@ func newRootCmd() *cobra.Command {
 	defaultGenAPI := !isProd
 
 	cmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Print version and exit")
-	cmd.Flags().String("config", "", "Path to config file")
 	cmd.PersistentFlags().BoolVarP(&genAPIDocs, "gen-api-docs", "a", defaultGenAPI, "Generate API documentation via gomarkdoc")
 	cmd.PersistentFlags().StringArrayVarP(&templatesOverride, "templates", "t", nil, "Path to a file or directory of custom templates overriding the embedded defaults (repeatable)")
 
