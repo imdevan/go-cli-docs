@@ -3,7 +3,6 @@ title: Contributing
 description: Contributing to go-cli-docs
 ---
 
-# Contributing
 
 ## Setup
 

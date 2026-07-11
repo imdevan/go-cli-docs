@@ -22,6 +22,7 @@ const sidebar = [
     { label: 'generate', link: '/commands/generate' },
     { label: 'init', link: '/commands/init' },
     { label: 'watch', link: '/commands/watch' },
+
   ] },
   { label: 'Configuration', link: '/configuration' },
 ];
