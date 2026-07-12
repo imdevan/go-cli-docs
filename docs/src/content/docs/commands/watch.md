@@ -3,15 +3,16 @@ title: watch
 description: Watch source files and re-generate documentation on change
 ---
 
-Monitors source files for changes and automatically re-runs generate.
-Watched patterns: *.md, *.go, package.toml
-Excluded paths: node_modules/, docs/src/content/docs/, .git/
+Generate Astro Starlight documentation for Go CLI projects.
+The tool parses Cobra commands and flags, rendering markdown pages,
+sidebar configs, and API docs.
 
 ### Example
 
 ```bash
+go-cli-docs init
+go-cli-docs generate
 go-cli-docs watch
-go-cli-docs watch --gen-api-docs=false
 ```
 
 ## Usage
@@ -20,18 +21,6 @@ go-cli-docs watch --gen-api-docs=false
 go-cli-docs watch
 ```
 
-## Flags
-
-### Global Flags
-
-
-
-| Flag | Type | Description |
-|------|------|-------------|
-| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
-| -t, --templates | stringarray | Path to a file or directory of custom templates overriding the embedded defaults (repeatable) |
-
-
 ## Source
 
-See [watch.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/watch.go) for implementation details.
+See [root.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/root.go) for implementation details.

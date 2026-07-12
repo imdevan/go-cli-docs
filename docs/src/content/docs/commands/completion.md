@@ -3,12 +3,16 @@ title: completion
 description: Generate shell completion scripts
 ---
 
-Generate shell completion scripts for bash, zsh, fish, or powershell.
+Generate Astro Starlight documentation for Go CLI projects.
+The tool parses Cobra commands and flags, rendering markdown pages,
+sidebar configs, and API docs.
 
 ### Example
 
 ```bash
-go-cli-docs completion bash > /etc/bash_completion.d/go-cli-docs
+go-cli-docs init
+go-cli-docs generate
+go-cli-docs watch
 ```
 
 ## Usage
@@ -17,18 +21,6 @@ go-cli-docs completion bash > /etc/bash_completion.d/go-cli-docs
 go-cli-docs completion [bash|zsh|fish|powershell]
 ```
 
-## Flags
-
-### Global Flags
-
-
-
-| Flag | Type | Description |
-|------|------|-------------|
-| -a, --gen-api-docs | bool | Generate API documentation via gomarkdoc |
-| -t, --templates | stringarray | Path to a file or directory of custom templates overriding the embedded defaults (repeatable) |
-
-
 ## Source
 
-See [completion.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/completion.go) for implementation details.
+See [root.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/root.go) for implementation details.

@@ -16,11 +16,11 @@ A go cli to build docs for your go cli.
   - Command pages parsed directly from Cobra command definitions
   - API reference pages via [gomarkdoc](https://github.com/princjef/gomarkdoc)
 - Live-reload watcher — reruns `generate` whenever source files change
-- Configuration management with TOML (`internal/package/package.toml`)
 - [Just](https://just.systems/) recipes to build, test, and release
   - Homebrew tap, AUR, GitHub release, and manual download supported
 - Integration and unit tested
 - Shell completion (bash, zsh, fish, powershell)
+- Doesn't add to your go cli build size
 
 ## Author's Note
 
@@ -86,7 +86,6 @@ docs_base   = "/my-tool"
 
 - Go module name in `go.mod` and all import paths throughout `internal/` and `cmd/`
 - Binary name in the justfile and build scripts
-- Config directory paths in `internal/utils/paths.go`
 - Shell completion examples
 - README description block
 - Version constant in `cmd/*/root.go`
@@ -180,7 +179,6 @@ Items marked `*` are updated by `just sync`.
     │   └── package.toml        # Source of truth — edit this, then run just sync
     │
     ├── app/                    # Application bootstrap
-    ├── config/                 # Loads and parses config.toml
     ├── domain/                 # Core types and data models
     ├── errors/                 # Shared error types
     ├── templates/              # Embedded Go templates (*.tmpl)
