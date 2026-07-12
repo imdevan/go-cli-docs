@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -132,6 +133,10 @@ func addWatchDirs(watcher *fsnotify.Watcher, root string) error {
 // isWatchedEvent returns true when the event involves a file we care about.
 func isWatchedEvent(event fsnotify.Event) bool {
 	if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename) == 0 {
+		return false
+	}
+	base := filepath.Base(event.Name)
+	if strings.Contains(base, "_tmp") || strings.HasPrefix(base, "docs_exporter_tmp") {
 		return false
 	}
 	ext := filepath.Ext(event.Name)
