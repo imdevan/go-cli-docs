@@ -4,9 +4,7 @@ description: A go cli to build docs for your go cli.
 ---
 
 
-<img width="480" height="270" alt="screenshot-2026-02-23_16-30-13" src="https://github.com/user-attachments/assets/65386b56-f06f-47be-9063-5c947b30dc51" />
-
-A go cli to build docs for your go cli.
+A go cli tool to manage docs for your go cli tool.
 
 ## Features
 
