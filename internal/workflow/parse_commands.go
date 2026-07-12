@@ -64,7 +64,7 @@ func parseCommands(dir string) ([]CommandInfo, error) {
 	}()
 
 	testContent := fmt.Sprintf(strings.ReplaceAll(exporterTestTemplate, "#TAG#", "\x60"), rootExpr)
-	if err := os.WriteFile(testPath, []byte(testContent), 0644); err != nil {
+	if err := os.WriteFile(testPath, []byte(testContent), 0o644); err != nil {
 		return nil, fmt.Errorf("failed to write dynamic test file: %w", err)
 	}
 
@@ -106,7 +106,7 @@ func parseCommands(dir string) ([]CommandInfo, error) {
 
 	// 6. Flatten the command tree and merge with comments/flag groups
 	flatCmds := flattenCommands(exportedRoot, nil, pkgName, cmdComments)
-	
+
 	fmt.Printf("DEBUG FLAT CMDS: ")
 	for _, c := range flatCmds {
 		fmt.Printf("%s, ", c.CmdName)
@@ -361,13 +361,13 @@ func flattenCommands(ec ExportedCommand, parentPath []string, pkgName string, fi
 	var matchingComment *parsedFileComments
 	for i := range fileComments {
 		fc := &fileComments[i]
-		if len(parentPath) == 0 {
+		if parentPath == nil {
 			if fc.CmdName == "root" || fc.CmdName == pkgName || strings.HasSuffix(fc.GoFile, "root.go") {
 				matchingComment = fc
 				break
 			}
 		} else {
-			if fc.CmdName == ec.Name {
+			if fc.CmdName == ec.Name || fc.CmdName == strings.Join(currentPath, " ") {
 				matchingComment = fc
 				break
 			}
