@@ -1,27 +1,52 @@
+# Justfile setup
+# ================================================================================
 set shell := ["zsh", "-cu"]
 
+PACKAGE := "go-cli-docs"
+PACKAGE_BIN := "./bin/" + PACKAGE
+PACKAGE_CMD := "./cmd/" + PACKAGE
+
+cli_docs := "bin/go-cli-docs"
+cli_pack := "bin/go-cli-package"
+
+_install-docs:
+	@if [ ! -f ./bin/go-cli-docs ]; then \
+		echo "📥 Installing go-cli-docs..."; \
+		GOBIN="{{justfile_directory()}}/bin" "$(go env GOROOT)/bin/go" install github.com/imdevan/go-cli-docs/cmd/go-cli-docs@latest; \
+	fi
+
+_install-pack:
+	@if [ ! -f ./bin/go-cli-package ]; then \
+		echo "📥 Installing go-cli-package..."; \
+		GOBIN="{{justfile_directory()}}/bin" "$(go env GOROOT)/bin/go" install github.com/imdevan/go-cli-package/cmd/go-cli-package@latest; \
+	fi
+
+
+
+# Build
+# ================================================================================
+
 build:
-	go build -o bin/go-cli-docs ./cmd/go-cli-docs
-	@size=$(stat -c %s bin/go-cli-docs 2>/dev/null || stat -f %z bin/go-cli-docs 2>/dev/null); \
+	go build -o {{PACKAGE_BIN}} {{PACKAGE_CMD}}
+	@size=$(stat -c %s {{PACKAGE_BIN}} 2>/dev/null || stat -f %z {{cli_pack}} 2>/dev/null); \
 	echo "Build size: $(awk "BEGIN {printf \"%.2f MB\", $size/1048576}")"
 
 build-run:
-	go build -o bin/go-cli-docs ./cmd/go-cli-docs && ./bin/go-cli-docs
+	go build -o {{PACKAGE_BIN}} {{PACKAGE_CMD}} && {{PACKAGE_BIN}}
 
 watch:
-	@rg --files | entr -r sh -c 'sleep 0.5; go build -o bin/go-cli-docs ./cmd/go-cli-docs'
+	@rg --files | entr -r sh -c 'sleep 0.5; go build -o {{PACKAGE_BIN}} {{PACKAGE_CMD}}'
 
 dev-build:
-	go build -gcflags "all=-N -l" -o bin/go-cli-docs ./cmd/go-cli-docs
+	go build -gcflags "all=-N -l" -o {{PACKAGE_BIN}} {{PACKAGE_CMD}}
 
-build-aur:
-	./scripts/build_aur.sh
-
+# Install local build globally
 install:
-	install -m 0755 bin/go-cli-docs /usr/local/bin/go-cli-docs
+	install -m 0755 {{PACKAGE_BIN}} /usr/local/bin/{{PACKAGE}}
 
+# Uninstall local build globally
 uninstall:
-	rm -f /usr/local/bin/go-cli-docs
+	rm -f /usr/local/bin/{{PACKAGE}}
 
 test:
 	go test ./...
@@ -29,21 +54,20 @@ test:
 test-verbose:
 	go test -v ./...
 
-sync:
-	./scripts/sync.sh
-
 clean:
 	rm -rf bin
 
-# Documentation tasks
-docs-init args="":
-	./bin/go-cli-docs init {{args}}
+# Documentation
+# ================================================================================
 
-docs-generate args="":
-	./bin/go-cli-docs generate {{args}}
+docs-init args="": _install-docs
+	{{cli_docs}} init {{args}}
 
-docs-dev args="":
-	./bin/go-cli-docs watch {{args}} & cd docs && bun install && bun run dev
+docs-generate args="":  _install-docs
+	{{cli_docs}} generate {{args}}
+
+docs-dev args="": _install-docs
+	{{cli_docs}} watch {{args}} & cd docs && bun install && bun run dev
 
 docs-build: docs-generate
 	@echo "🏗️  Building documentation site..."
@@ -57,60 +81,61 @@ docs-clean:
 	@echo "🧹 Cleaning documentation build artifacts..."
 	rm -rf docs/dist docs/.astro docs/node_modules docs/src/content/docs/api
 
-# Package distribution tasks
-init-homebrew-tap:
-	@echo "🍺 Initializing Homebrew tap repository..."
-	./scripts/init_homebrew_tap.sh
+# Package management
+# ================================================================================
 
-init-aur-repo:
-	@echo "📦 Initializing AUR repository..."
-	./scripts/init_aur_repo.sh
+# Rename template based on internal/package/package.toml or pass --package 
+sync args="":
+  {{cli_pack}} sync {{args}}
 
-update-homebrew-formula VERSION="":
-	@echo "🍺 Updating Homebrew formula to version {{VERSION}}..."
-	./scripts/update_homebrew_formula.sh {{VERSION}}
+# Github tag management
 
-update-aur-pkgbuild VERSION="":
-	@echo "📦 Updating AUR PKGBUILD..."
-	./scripts/update_aur_pkgbuild.sh {{VERSION}}
+tag-list: build _install-pack
+	{{cli_pack}} tag list
 
-# Git tag management
-tag VERSION="":
-	./scripts/tag.sh {{VERSION}}
+tag version="": build _install-pack
+	{{cli_pack}} tag create {{version}}
 
-tag-delete VERSION="":
-	./scripts/tag_delete.sh {{VERSION}}
+tag-delete version="": build _install-pack
+	{{cli_pack}} tag delete {{version}}
 
-tag-list:
-	@echo "📋 Available tags:"
-	@git tag -l --sort=-v:refname | head -20
+# Github release (calls tag)
 
-# Release management
-release VERSION="":
-	./scripts/release.sh {{VERSION}}
+release version="": build _install-pack
+	{{cli_pack}} release {{version}}
 
-github-release VERSION="":
-	./scripts/github_release.sh {{VERSION}}
+# Pipeline init
 
-deploy-aur VERSION="":
-	./scripts/deploy_aur.sh {{VERSION}}
+init-homebrew: build _install-pack
+	{{cli_pack}} init homebrew
 
-deploy-homebrew VERSION="":
-	./scripts/deploy_homebrew.sh {{VERSION}}
+init-aur: build _install-pack
+	{{cli_pack}} init aur
 
-deploy-all VERSION="":
-	./scripts/deploy_all.sh {{VERSION}}
+init: build _install-pack
+	{{cli_pack}} init all
 
-publish-homebrew VERSION="":
-	./scripts/deploy_homebrew.sh {{VERSION}}
+# Package updates
 
-publish-aur VERSION="":
-	./scripts/deploy_aur.sh {{VERSION}}
+update-homebrew version="": build _install-pack
+	{{cli_pack}} update homebrew {{version}}
 
-publish VERSION="":
-	@just tag {{VERSION}}
-	@just github-release {{VERSION}}
-	@just release {{VERSION}}
-	@just publish-homebrew {{VERSION}}
-	@just publish-aur {{VERSION}}
+update-aur version="": build _install-pack
+	{{cli_pack}} update aur {{version}}
+
+update version="": build _install-pack
+	{{cli_pack}} update all {{version}}
+
+
+# Publish
+
+publish-homebrew version="": build
+	{{cli_pack}} publish homebrew {{version}}
+
+publish-aur version="": build
+	{{cli_pack}} publish aur {{version}}
+
+publish version="": build
+	{{cli_pack}} publish all {{version}}
+
 
