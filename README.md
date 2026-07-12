@@ -1,8 +1,6 @@
 # go-cli-docs
 
-<img width="480" height="270" alt="screenshot-2026-02-23_16-30-13" src="https://github.com/user-attachments/assets/65386b56-f06f-47be-9063-5c947b30dc51" />
-
-A go cli to build docs for your go cli.
+A go cli tool to manage docs for your go cli tool.
 
 ## Features
 
@@ -16,6 +14,7 @@ A go cli to build docs for your go cli.
   - Homebrew tap, AUR, GitHub release, and manual download supported
 - Integration and unit tested
 - Shell completion (bash, zsh, fish, powershell)
+- Doesn't add to your go cli build size
 
 ## Author's Note
 
