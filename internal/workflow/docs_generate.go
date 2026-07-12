@@ -44,61 +44,6 @@ func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 		return fmt.Errorf("failed to parse commands: %w", err)
 	}
 
-	for i := range commands {
-		if commands[i].CmdName == "" {
-			words := strings.Fields(commands[i].Use)
-			if len(words) > 0 {
-				commands[i].CmdName = words[0]
-			} else {
-				base := filepath.Base(commands[i].GoFile)
-				commands[i].CmdName = strings.TrimSuffix(base, filepath.Ext(base))
-			}
-		}
-		if commands[i].CmdName == "root" || filepath.Base(commands[i].GoFile) == "root.go" || strings.Contains(strings.ToLower(commands[i].VarName), "rootcmd") {
-			commands[i].CmdName = pkgInfo.Name
-		}
-		commands[i].Path = []string{commands[i].CmdName}
-	}
-
-	relations, relErr := parseCommandRelations("./cmd/" + pkgInfo.Name)
-	if relErr == nil {
-		varNameToCmdName := make(map[string]string)
-		for _, c := range commands {
-			varNameToCmdName[c.VarName] = c.CmdName
-		}
-
-		for i := range commands {
-			if commands[i].CmdName == pkgInfo.Name {
-				continue
-			}
-
-			var chain []string
-			current := commands[i].VarName
-			for {
-				parent, exists := relations[current]
-				if !exists {
-					break
-				}
-				chain = append([]string{parent}, chain...)
-				current = parent
-			}
-
-			if len(chain) > 0 {
-				var nameParts []string
-				for _, parentVar := range chain {
-					if parentCmdName, ok := varNameToCmdName[parentVar]; ok {
-						if parentCmdName != pkgInfo.Name {
-							nameParts = append(nameParts, parentCmdName)
-						}
-					}
-				}
-				nameParts = append(nameParts, commands[i].CmdName)
-				commands[i].Path = nameParts
-				commands[i].CmdName = strings.Join(nameParts, "-")
-			}
-		}
-	}
-
 	// 3. Generate config (docs/config.mjs)
 	if err := writeConfigMjs(pkgInfo, templatesOverride); err != nil {
 		return err

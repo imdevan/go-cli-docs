@@ -154,10 +154,10 @@ Body`,
 		t.Run(tt.name, func(t *testing.T) {
 			// Write temp source file
 			srcFile := "test_temp_src.md"
+			defer os.Remove(srcFile)
 			if err := os.WriteFile(srcFile, []byte(tt.srcContent), 0644); err != nil {
 				t.Fatalf("failed to write temp source file: %v", err)
 			}
-			defer os.Remove(srcFile)
 
 			dstFile := "test_temp_dst.md"
 			dstPath := filepath.Join("docs", "src", "content", "docs", dstFile)
