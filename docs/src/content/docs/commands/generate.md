@@ -3,16 +3,20 @@ title: generate
 description: Generate all documentation from source
 ---
 
-Generate Astro Starlight documentation for Go CLI projects.
-The tool parses Cobra commands and flags, rendering markdown pages,
-sidebar configs, and API docs.
+Invokes the full docs generation pipeline:
+1. Reads package metadata (TOML)
+2. Generates markdown content pages
+3. Parses Cobra commands
+4. Generates command documentation
+5. Generates API documentation (gomarkdoc)
+6. Generates config (config.mjs)
+7. Generates sidebar (sidebar.mjs)
 
 ### Example
 
 ```bash
-go-cli-docs init
 go-cli-docs generate
-go-cli-docs watch
+go-cli-docs generate --gen-api-docs=false
 ```
 
 ## Usage
@@ -23,4 +27,4 @@ go-cli-docs generate
 
 ## Source
 
-See [root.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/root.go) for implementation details.
+See [generate.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/generate.go) for implementation details.

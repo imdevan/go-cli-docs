@@ -3,16 +3,15 @@ title: init
 description: Scaffold the Astro Starlight docs directory
 ---
 
-Generate Astro Starlight documentation for Go CLI projects.
-The tool parses Cobra commands and flags, rendering markdown pages,
-sidebar configs, and API docs.
+Creates the docs/ folder and scaffolds Astro Starlight.
+If the docs/ directory already exists, init is a no-op.
+After scaffolding, init automatically runs generate to populate the docs site.
 
 ### Example
 
 ```bash
 go-cli-docs init
-go-cli-docs generate
-go-cli-docs watch
+go-cli-docs init --pkg-manager npm
 ```
 
 ## Usage
@@ -33,4 +32,4 @@ go-cli-docs init
 
 ## Source
 
-See [root.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/root.go) for implementation details.
+See [init.go](https://github.com/imdevan/go-cli-docs/blob/main/cmd/go-cli-docs/init.go) for implementation details.
