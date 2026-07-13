@@ -164,7 +164,7 @@ Body`,
 			defer os.Remove(dstPath)
 
 			// Run generation
-			if err := generateContentPage(srcFile, dstFile, tt.defaultTitle, "Test desc", nil); err != nil {
+			if _, err := generateContentPage(srcFile, dstFile, tt.defaultTitle, "Test desc", nil); err != nil {
 				t.Fatalf("generateContentPage failed: %v", err)
 			}
 

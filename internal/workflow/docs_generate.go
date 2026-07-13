@@ -49,39 +49,41 @@ func GenerateDocs(genAPIDocs bool, templatesOverride []string) error {
 		return err
 	}
 
-	// 4. Generate sidebar files (docs/sidebar.mjs)
-	if err := writeSidebarMjs(pkgInfo, commands, templatesOverride); err != nil {
+	// 4. Generate markdown content pages (install/config existence needed for sidebar)
+	if _, err := generateContentPage("README.md", "index.md", pkgInfo.Name, pkgInfo.Description, templatesOverride); err != nil {
+		return err
+	}
+	hasInstall, err := generateContentPage("INSTALL.md", "install.md", "Install", fmt.Sprintf("Installation instructions for %s", pkgInfo.Name), templatesOverride)
+	if err != nil {
+		return err
+	}
+	hasConfig, err := generateContentPage("CONFIG.md", "configuration.md", "Configuration", fmt.Sprintf("Configuration options for %s", pkgInfo.Name), templatesOverride)
+	if err != nil {
+		return err
+	}
+	// CONTRIBUTING.md is optional
+	_, _ = generateContentPage("CONTRIBUTING.md", "contributing.md", "Contributing", fmt.Sprintf("Contributing to %s", pkgInfo.Name), templatesOverride)
+
+	// 5. Generate sidebar files (docs/sidebar.mjs)
+	if err := writeSidebarMjs(pkgInfo, commands, hasInstall, hasConfig, templatesOverride); err != nil {
 		return err
 	}
 
-	// 5. Update docs/astro.config.mjs to use dynamic header and config
+	// 6. Update docs/astro.config.mjs to use dynamic header and config
 	if err := writeAstroConfigMjs(templatesOverride); err != nil {
 		return err
 	}
 
-	// 6. Generate base custom.css if it does not already exist
+	// 7. Generate base custom.css if it does not already exist
 	if err := writeCustomCss(pkgInfo, templatesOverride); err != nil {
 		return err
 	}
 
-	// 7. Strip landing page if it exists (Astro Starlight default index.mdx)
+	// 8. Strip landing page if it exists (Astro Starlight default index.mdx)
 	indexMdx := filepath.Join("docs", "src", "content", "docs", "index.mdx")
 	if _, err := os.Stat(indexMdx); err == nil {
 		_ = os.Remove(indexMdx)
 	}
-
-	// 7. Generate markdown content pages
-	if err := generateContentPage("README.md", "index.md", pkgInfo.Name, pkgInfo.Description, templatesOverride); err != nil {
-		return err
-	}
-	if err := generateContentPage("INSTALL.md", "install.md", "Install", fmt.Sprintf("Installation instructions for %s", pkgInfo.Name), templatesOverride); err != nil {
-		return err
-	}
-	if err := generateContentPage("CONFIG.md", "configuration.md", "Configuration", fmt.Sprintf("Configuration options for %s", pkgInfo.Name), templatesOverride); err != nil {
-		return err
-	}
-	// CONTRIBUTING.md is optional
-	_ = generateContentPage("CONTRIBUTING.md", "contributing.md", "Contributing", fmt.Sprintf("Contributing to %s", pkgInfo.Name), templatesOverride)
 
 	// 8. Generate command documentation
 	if err := generateCommandPages(pkgInfo, commands, templatesOverride); err != nil {
@@ -149,7 +151,7 @@ func writeConfigMjs(info *PackageInfo, templatesOverride []string) error {
 	return nil
 }
 
-func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, templatesOverride []string) error {
+func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, hasInstall bool, hasConfig bool, templatesOverride []string) error {
 	tmpl, err := templates.Load("sidebar.mjs.tmpl", templatesOverride)
 	if err != nil {
 		return fmt.Errorf("failed to parse sidebar template: %w", err)
@@ -167,10 +169,14 @@ func writeSidebarMjs(info *PackageInfo, commands []CommandInfo, templatesOverrid
 		ProjectName string
 		CommandsJS  string
 		APIPackages []string
+		HasInstall  bool
+		HasConfig   bool
 	}{
 		ProjectName: info.Name,
 		CommandsJS:  commandsJS,
 		APIPackages: apiPackages,
+		HasInstall:  hasInstall,
+		HasConfig:   hasConfig,
 	}
 
 	path := filepath.Join("docs", "sidebar.mjs")
@@ -279,25 +285,28 @@ func extractMarkdownTitle(content string, defaultTitle string) (string, string) 
 	return defaultTitle, content
 }
 
-func generateContentPage(srcFile, dstFile, title, description string, templatesOverride []string) error {
+// generateContentPage writes a docs page from srcFile. It returns (true, nil) when the
+// source file exists and the page is written successfully, (false, nil) when the source
+// file is absent, and (false, err) on any other failure.
+func generateContentPage(srcFile, dstFile, title, description string, templatesOverride []string) (bool, error) {
 	if _, err := os.Stat(srcFile); err != nil {
-		return nil // optional source missing
+		return false, nil // optional source missing
 	}
 	data, err := ioutil.ReadFile(srcFile)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	title, content := extractMarkdownTitle(string(data), title)
 
 	tmpl, err := templates.Load("page.md.tmpl", templatesOverride)
 	if err != nil {
-		return fmt.Errorf("failed to parse page template: %w", err)
+		return false, fmt.Errorf("failed to parse page template: %w", err)
 	}
 
 	outDir := filepath.Join("docs", "src", "content", "docs")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return err
+		return false, err
 	}
 	dstPath := filepath.Join(outDir, dstFile)
 
@@ -312,9 +321,9 @@ func generateContentPage(srcFile, dstFile, title, description string, templatesO
 	}
 
 	if err := templates.RenderToFile(tmpl, dstPath, templateData); err != nil {
-		return fmt.Errorf("failed to write content page %s: %w", dstFile, err)
+		return false, fmt.Errorf("failed to write content page %s: %w", dstFile, err)
 	}
-	return nil
+	return true, nil
 }
 
 type TemplateFlag struct {

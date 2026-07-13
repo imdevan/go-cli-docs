@@ -15,12 +15,16 @@ const apiReference = {
 
 const sidebar = [
   { label: '{{ .ProjectName }}', link: '/' },
+  {{- if .HasInstall }}
   { label: 'Install', link: '/install' },
+  {{- end }}
   { label: 'Commands', items: [
     { label: '{{ .ProjectName }}', link: '/commands/{{ .ProjectName }}' },
 {{ .CommandsJS }}
   ] },
+  {{- if .HasConfig }}
   { label: 'Configuration', link: '/configuration' },
+  {{- end }}
 ];
 
 const isProduction = process.env.NODE_ENV === 'production';
