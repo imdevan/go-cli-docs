@@ -57,13 +57,19 @@ func parseCommands(dir string) ([]CommandInfo, error) {
 
 	// 2. Write dynamic test file docs_exporter_tmp_test.go
 	testPath := filepath.Join(dir, "docs_exporter_tmp_test.go")
-	jsonPath := filepath.Join(dir, "docs_metadata_tmp.json")
+	tmpJSONFile, err := os.CreateTemp("", "docs_metadata_tmp_*.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp json file: %w", err)
+	}
+	jsonPath := tmpJSONFile.Name()
+	tmpJSONFile.Close()
+
 	defer func() {
 		_ = os.Remove(testPath)
 		_ = os.Remove(jsonPath)
 	}()
 
-	testContent := fmt.Sprintf(strings.ReplaceAll(exporterTestTemplate, "#TAG#", "\x60"), rootExpr)
+	testContent := fmt.Sprintf(strings.ReplaceAll(exporterTestTemplate, "#TAG#", "\x60"), rootExpr, jsonPath)
 	if err := os.WriteFile(testPath, []byte(testContent), 0o644); err != nil {
 		return nil, fmt.Errorf("failed to write dynamic test file: %w", err)
 	}
@@ -546,13 +552,13 @@ func exportCmd(cmd *cobra.Command) ExportedCommand {
 }
 
 func TestExportDocs(t *testing.T) {
-	root := %s
+	root := %[1]s
 	ec := exportCmd(root)
 	data, err := json.Marshal(ec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile("docs_metadata_tmp.json", data, 0644)
+	err = os.WriteFile(%[2]q, data, 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
